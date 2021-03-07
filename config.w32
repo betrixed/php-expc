@@ -1,0 +1,7 @@
+ARG_ENABLE('phiz', 'phiz support', 'no');
+
+if (PHP_PHIZ != 'no') {
+	AC_DEFINE('HAVE_PHIZ', 1, 'phiz support enabled');
+
+	EXTENSION('phiz', 'php_phiz.c phiz_str8.c', null, '/DZEND_ENABLE_STATIC_TSRMLS_CACHE=1');
+}

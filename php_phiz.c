@@ -123,7 +123,7 @@ ZEND_FUNCTION(test2)
 
 
 /* {{{  route_extract_paramsstring( string $s): array */
-ZEND_FUNCTION(route_extract_paramsstring)
+ZEND_FUNCTION(route_extract_params)
 {
 	char *pat = NULL;
 	size_t pat_len = 0;

@@ -43,6 +43,70 @@ PHP_METHOD(Str8, __construct)
 
 }
 
+/* {{{ Return the iterated string */
+PHP_METHOD(Str8, iteratee)
+{
+	zval *object = ZEND_THIS;
+	phiz_str8_obj* intern;
+	zend_string *target;
+
+	intern = Z_PHIZ_STR8_P(object);
+	
+	ZVAL_COPY_VALUE(return_value, &intern->target);
+
+}
+
+/* {{{ Returns state of iteration */
+PHP_METHOD(Str8, valid)
+{
+	zval *object = ZEND_THIS;
+	phiz_str8_obj* intern;
+
+	intern = Z_PHIZ_STR8_P(object);
+	RETVAL_FALSE;
+}
+
+/* {{{ Returns nothing (undefined), update internals */
+PHP_METHOD(Str8, next)
+{
+	zval *object = ZEND_THIS;
+	phiz_str8_obj* intern;
+
+	intern = Z_PHIZ_STR8_P(object);
+}
+
+/* {{{ Returns nothing (undefined), update internals */
+PHP_METHOD(Str8, rewind)
+{
+	zval *object = ZEND_THIS;
+	phiz_str8_obj* intern;
+
+	intern = Z_PHIZ_STR8_P(object);
+}
+/* {{{ Return 8-bit character offset as longint */
+PHP_METHOD(Str8, key)
+{
+	zval *object = ZEND_THIS;
+	phiz_str8_obj* intern;
+
+	intern = Z_PHIZ_STR8_P(object);
+	
+	ZVAL_LONG(return_value, 1);
+
+}
+
+/* {{{ Return a 32 bit unicode value as zval longint */
+PHP_METHOD(Str8, current)
+{
+	zval *object = ZEND_THIS;
+	phiz_str8_obj* intern;
+
+	intern = Z_PHIZ_STR8_P(object);
+	
+	ZVAL_LONG(return_value, 1);
+
+}
+
 // not implementing inherited (yet)
 static zend_object *phiz_str8_new_ex(zend_class_entry *class_type,
 									zend_object *orig, bool clone_orig)

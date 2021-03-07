@@ -21,5 +21,5 @@ class Str8 implements Iterator {
 	public function valid() {}
 
 	/** @return string */
-	public function getValue() {}
+	public function iteratee() {}
 }

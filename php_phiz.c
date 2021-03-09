@@ -24,7 +24,8 @@ PHP_MINIT_FUNCTION(phiz)
 {
 	//REGISTER_INI_ENTRIES();
 	PHP_MINIT(phiz_str8)(INIT_FUNC_ARGS_PASSTHRU);
-	
+	PHP_MINIT(phiz_carray)(INIT_FUNC_ARGS_PASSTHRU);
+
 	return SUCCESS;
 }
 /* }}} */

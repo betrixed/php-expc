@@ -90,8 +90,43 @@ static void pca_copyelems_uint32( p_carray_obj this, zend_long offset,
 	}
 }
 
+static void pca_getzval_int8( p_carray_obj this, zend_long offset,  zval* retval)
+{
+	zend_long value = *((int8_t*) this->elements + offset);
+	ZVAL_LONG(retval,value);
+}
 
+static void pca_getzval_uint32( p_carray_obj this, zend_long offset,  zval* retval)
+{
+	zend_long value = *((uint32_t*) this->elements + offset);
+	ZVAL_LONG(retval,value);
+}
 
+static int pca_setzval_int8( p_carray_obj this, zend_long offset,  zval* setval)
+{
+	if (Z_TYPE_P(setval) != IS_LONG){
+		return CATE_TYPE;
+	}
+	zend_long val = Z_LVAL_P(setval);
+	if (val < CHAR_MIN || val > CHAR_MAX) {
+		return CATE_RANGE;
+	}
+	*((int8_t*) this->elements + offset) = val;
+	return CATE_OK;
+}
+
+static int pca_setzval_uint32( p_carray_obj this, zend_long offset,  zval* setval)
+{
+	if (Z_TYPE_P(setval) != IS_LONG){
+		return CATE_TYPE;
+	}
+	zend_long val = Z_LVAL_P(setval);
+	if (val < 0 || val > UINT_MAX) {
+		return  CATE_RANGE;
+	}
+	*((uint32_t*) this->elements + offset) = val;
+	return CATE_OK;
+}
 
 static void pca_copyelems_int8( p_carray_obj this, zend_long offset, 
 	p_carray_obj other, zend_long begin, zend_long end)
@@ -107,7 +142,6 @@ static void pca_copyelems_int8( p_carray_obj this, zend_long offset,
 		*to++ = *bgp++;
 	}
 }
-
 
 static bool pca_is_empty(p_carray_obj this) {
 		if (this->elements) {
@@ -125,7 +159,9 @@ static carray_obj_fntab int8_fntab = {
 	pca_initelems_int8,
 	pca_copyelems_int8,
 	pca_alloc,
-	pca_resize
+	pca_resize,
+	pca_getzval_int8,
+	pca_setzval_int8
 };
 static carray_obj_fntab uint32_fntab = {
 	CAT_UINT32,
@@ -134,7 +170,9 @@ static carray_obj_fntab uint32_fntab = {
 	pca_initelems_uint32,
 	pca_copyelems_uint32,
 	pca_alloc,
-	pca_resize
+	pca_resize,
+	pca_getzval_uint32,
+	pca_setzval_uint32
 };
 
 

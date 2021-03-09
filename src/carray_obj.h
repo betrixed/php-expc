@@ -5,7 +5,9 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-typedef enum _Array_EType {
+#include "php.h"
+
+typedef enum _CArray_EType {
  	CAT_UNSIGNED = 1,
 	CAT_INT8 = 2,
 	CAT_UINT8 = 3,
@@ -15,18 +17,29 @@ typedef enum _Array_EType {
 	CAT_UINT32 = 9,
 	CAT_REAL32 = 16,
 	CAT_REAL64 = 32
-} Array_EType;
+} CArray_EType;
+
+typedef enum _CArray_Error {
+	CATE_OK = 0,
+	CATE_TYPE = -1,
+	CATE_RANGE = -2,
+	CATE_OFFSET = -3
+} CArray_Error;
 
 typedef struct _carray_obj* p_carray_obj;
 
 typedef struct _carray_obj_fntab {
 	int 	etype;
 	size_t  esize;
+
 	bool (*isEmpty)(p_carray_obj self);
 	void (*init_elems)(p_carray_obj self, long from, long to);
 	void (*copy_elems)(p_carray_obj self, long offset,  p_carray_obj other, long begin, long end);
 	void (*alloc_size)(p_carray_obj self, long size);
 	void (*resize)(p_carray_obj self, long size);
+
+	void (*get_zval)(p_carray_obj self, long offset, zval *zp); 
+	int (*set_zval)(p_carray_obj self, long offset, zval *zp); 
 }
 carray_obj_fntab;
 

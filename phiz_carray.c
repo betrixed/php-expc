@@ -26,6 +26,11 @@ static  pz_carray phiz_carray_from_obj(zend_object *obj)
 
 #define Z_PHIZ_CARRAY_P(zv)  phiz_carray_from_obj(Z_OBJ_P((zv)))
 
+// structure for pointer to functions
+zend_object_handlers 	phiz_handler_CArray;
+
+PHPAPI zend_class_entry *phiz_ce_CArray;
+
 /* Helps enforce the invariants in debug mode:
  *   - if size == 0, then elements == NULL
  *   - if size > 0, then elements != NULL
@@ -92,6 +97,88 @@ PHP_METHOD(CArray, getSize)
 	RETURN_LONG(intern->cobj.size);
 }
 
+PHP_METHOD(CArray, count)
+{
+	pz_carray 		intern;
+	ZEND_PARSE_PARAMETERS_NONE();
+
+	intern = Z_PHIZ_CARRAY_P(ZEND_THIS);
+
+	RETURN_LONG(intern->cobj.size);
+}
+
+PHP_METHOD(CArray, toArray)
+{
+	pz_carray intern;
+	zval      item;
+
+	ZEND_PARSE_PARAMETERS_NONE();
+
+	intern = Z_PHIZ_CARRAY_P(ZEND_THIS);
+
+	ptrdiff_t size = (ptrdiff_t) intern->cobj.size;
+	if (size > 0) {
+		array_init(return_value);
+		
+		p_carray_obj pobj = &intern->cobj;
+		carray_obj_fntab* fntab = pobj->fntab;
+
+		for (zend_long i = 0; i < size; i++) {
+			fntab->get_zval(pobj, i, &item);
+			zend_hash_index_update(Z_ARRVAL_P(return_value), i, &item);
+		}
+	} else {
+		RETURN_EMPTY_ARRAY();
+	}
+}
+
+/* Returns the value at the specified $index. */
+PHP_METHOD(CArray, offsetGet)
+{
+	zend_long		zindex;
+	pz_carray 		intern;
+
+	ZEND_PARSE_PARAMETERS_START(1, 1)
+		Z_PARAM_LONG(zindex)
+	ZEND_PARSE_PARAMETERS_END();
+
+	intern = Z_PHIZ_CARRAY_P(ZEND_THIS);
+	
+	p_carray_obj pobj = &intern->cobj;
+	carray_obj_fntab* fntab = pobj->fntab;
+
+	if ((zindex >= 0) && (zindex < pobj->size)) {
+		fntab->get_zval(pobj, zindex, return_value);
+	}
+	else {
+		// TODO: throw OutOfRange 
+		RETURN_NULL();
+	}
+}
+
+/* Sets the value at the specified $index to $newval. */
+PHP_METHOD(CArray, offsetSet)
+{
+	zend_long		zindex;
+	pz_carray 		intern;
+	zval*            value;
+
+	ZEND_PARSE_PARAMETERS_START(2, 2)
+		Z_PARAM_LONG(zindex)
+		Z_PARAM_ZVAL(value)
+	ZEND_PARSE_PARAMETERS_END();
+
+	p_carray_obj pobj = &intern->cobj;
+	carray_obj_fntab* fntab = pobj->fntab;
+
+	if ((zindex >= 0) && (zindex < pobj->size)) {	
+		pobj->fntab->set_zval(pobj, zindex, value);
+	}
+	else {
+		// TODO: throw OutOfRange 
+	}
+}
+
 PHP_METHOD(CArray, offsetExists)
 {
 	zend_long		zindex;
@@ -104,6 +191,17 @@ PHP_METHOD(CArray, offsetExists)
 	intern = Z_PHIZ_CARRAY_P(ZEND_THIS);
 
 	RETURN_BOOL((zindex >= 0 && zindex < intern->cobj.size));
+}
+
+/* Unsets the value at the specified $index. */
+PHP_METHOD(CArray, offsetUnset)
+{
+	zend_long		zindex;
+
+	ZEND_PARSE_PARAMETERS_START(1, 1)
+		Z_PARAM_LONG(zindex)
+	ZEND_PARSE_PARAMETERS_END();
+	// Not implemented
 }
 
 static void phiz_carray_ctor(p_carray_obj this, p_carray_obj from)
@@ -121,5 +219,46 @@ static void phiz_carray_copy_ctor( p_carray_obj to, p_carray_obj from)
 {
 	
 	carray_ctor_copy(to, from);
+
+}
+
+// not implementing inherited (yet)
+static zend_object *phiz_carray_new_ex(zend_class_entry *class_type,
+									zend_object *orig, bool clone_orig)
+{
+	pz_carray_obj 		  intern;
+	zend_class_entry      *parent = class_type;
+	bool                   inherited = false;
+
+	intern = zend_object_alloc(sizeof(phiz_carray_obj), class_type);
+	zend_object_std_init(&intern->std, class_type);
+	object_properties_init(&intern->std, class_type);
+	while(parent) {
+		if (parent == phiz_ce_CArray) {
+			intern->std.handlers = &phiz_handler_CArray;
+			break;
+		}
+		parent = parent->parent;
+		inherited = true;
+	}
+
+	ZEND_ASSERT(parent);
+
+	ZEND_ASSERT(!inherited);
+
+	return &intern->std;
+	
+}
+static zend_object *phiz_carray_new(zend_class_entry *class_type)
+{
+	return phiz_carray_new_ex(class_type, NULL, 0);
+}
+
+PHP_MINIT_FUNCTION(phiz_carray)
+{
+	phiz_ce_CArray = register_class_CArray(zend_ce_iterator);
+	phiz_ce_CArray->create_object  = phiz_carray_new;
+	memcpy(&phiz_handler_CArray, &std_object_handlers, sizeof(zend_object_handlers));
+	phiz_handler_CArray.offset = XtOffsetOf(phiz_carray_obj, std);
 
 }

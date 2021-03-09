@@ -1,0 +1,45 @@
+#ifndef CARRAY_OBJ_H
+#define CARRAY_OBJ_H
+
+#include <stddef.h>
+#include <stdint.h>
+#include <stdbool.h>
+
+typedef enum _Array_EType {
+ 	CAT_UNSIGNED = 1,
+	CAT_INT8 = 2,
+	CAT_UINT8 = 3,
+	CAT_INT16 = 4,
+	CAT_UINT16 = 5,
+	CAT_INT32 = 8,
+	CAT_UINT32 = 9,
+	CAT_REAL32 = 16,
+	CAT_REAL64 = 32
+} Array_EType;
+
+typedef struct _carray_obj* p_carray_obj;
+
+typedef struct _carray_obj_fntab {
+	int 	etype;
+	size_t  esize;
+	bool (*isEmpty)(p_carray_obj self);
+	void (*init_elems)(p_carray_obj self, long from, long to);
+	void (*copy_elems)(p_carray_obj self, long offset,  p_carray_obj other, long begin, long end);
+	void (*alloc_size)(p_carray_obj self, long size);
+	void (*resize)(p_carray_obj self, long size);
+}
+carray_obj_fntab;
+
+
+typedef struct _carray_obj {
+	carray_obj_fntab* 	 fntab;
+	void* 				 elements;	
+	size_t				 size;
+}
+carray_obj;
+
+// forward declarations
+void carray_ctor_etype(p_carray_obj this, int etype);
+void carray_ctor_copy(p_carray_obj this, p_carray_obj from);
+
+#endif

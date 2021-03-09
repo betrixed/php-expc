@@ -1,0 +1,4 @@
+Fatal error: Uncaught Error: Call to undefined function phiz_test2() in /home/michael/www/phiz/tests/003.php:2
+Stack trace:
+#0 {main}
+  thrown in /home/michael/www/phiz/tests/003.php on line 2

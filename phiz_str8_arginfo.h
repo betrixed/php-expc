@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 2d96b945126cfdf6efea4880f90e0f0cc2b55fe2 */
+ * Stub hash: 4cddab79a2195c8f5b93082af8d27addd61befbc */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Str8___construct, 0, 0, 1)
 	ZEND_ARG_TYPE_INFO(0, s, IS_STRING, 0)
@@ -9,6 +9,10 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Str8_current, 0, 0, 0)
 ZEND_END_ARG_INFO()
 
 #define arginfo_class_Str8_key arginfo_class_Str8_current
+
+#define arginfo_class_Str8_bytes arginfo_class_Str8_current
+
+#define arginfo_class_Str8_byteslen arginfo_class_Str8_current
 
 #define arginfo_class_Str8_next arginfo_class_Str8_current
 
@@ -22,6 +26,8 @@ ZEND_END_ARG_INFO()
 ZEND_METHOD(Str8, __construct);
 ZEND_METHOD(Str8, current);
 ZEND_METHOD(Str8, key);
+ZEND_METHOD(Str8, bytes);
+ZEND_METHOD(Str8, byteslen);
 ZEND_METHOD(Str8, next);
 ZEND_METHOD(Str8, rewind);
 ZEND_METHOD(Str8, valid);
@@ -32,6 +38,8 @@ static const zend_function_entry class_Str8_methods[] = {
 	ZEND_ME(Str8, __construct, arginfo_class_Str8___construct, ZEND_ACC_PUBLIC)
 	ZEND_ME(Str8, current, arginfo_class_Str8_current, ZEND_ACC_PUBLIC)
 	ZEND_ME(Str8, key, arginfo_class_Str8_key, ZEND_ACC_PUBLIC)
+	ZEND_ME(Str8, bytes, arginfo_class_Str8_bytes, ZEND_ACC_PUBLIC)
+	ZEND_ME(Str8, byteslen, arginfo_class_Str8_byteslen, ZEND_ACC_PUBLIC)
 	ZEND_ME(Str8, next, arginfo_class_Str8_next, ZEND_ACC_PUBLIC)
 	ZEND_ME(Str8, rewind, arginfo_class_Str8_rewind, ZEND_ACC_PUBLIC)
 	ZEND_ME(Str8, valid, arginfo_class_Str8_valid, ZEND_ACC_PUBLIC)

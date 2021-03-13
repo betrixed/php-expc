@@ -11,6 +11,11 @@
 #include "phiz_carray.h"
 #include "src/carray_obj.h"
 
+#include "Zend/zend_interfaces.h"
+#define phiz_ce_Countable     zend_ce_countable
+#define phiz_ce_ArrayAccess	  zend_ce_arrayaccess
+
+
 
 typedef struct _phiz_carray_obj* pz_carray;
 
@@ -31,20 +36,6 @@ zend_object_handlers 	phiz_handler_CArray;
 
 PHPAPI zend_class_entry *phiz_ce_CArray;
 
-/* Helps enforce the invariants in debug mode:
- *   - if size == 0, then elements == NULL
- *   - if size > 0, then elements != NULL
- *   - size is not less than 0
- */
-static bool phiz_carray_empty(p_carray_obj array)
-{
-	if (array->elements) {
-		ZEND_ASSERT(array->size > 0);
-		return false;
-	}
-	ZEND_ASSERT(array->size == 0);
-	return true;
-}
 
 
 PHP_METHOD(CArray, __construct)
@@ -62,10 +53,10 @@ PHP_METHOD(CArray, __construct)
 
 	intern = Z_PHIZ_CARRAY_P(object);
 
-	// presume not initilized
-	carray_ctor_etype(&intern->cobj, etype);
+	// presume not initialized
+	carray_etype_ctor(&intern->cobj, etype);
 	if (size > 0) {
-		intern->cobj.fntab->alloc_size(&intern->cobj, size);
+		pca_alloc(&intern->cobj, size);
 		intern->cobj.fntab->init_elems(&intern->cobj, 0, size);
 	}
 	// no return value
@@ -83,7 +74,7 @@ PHP_METHOD(CArray, setSize)
 
 	intern = Z_PHIZ_CARRAY_P(ZEND_THIS);
 
-	intern->cobj.fntab->resize(&intern->cobj, size);
+	pca_resize(&intern->cobj, size);
 	RETURN_TRUE;
 
 }
@@ -207,18 +198,18 @@ PHP_METHOD(CArray, offsetUnset)
 static void phiz_carray_ctor(p_carray_obj this, p_carray_obj from)
 {
 
-	carray_ctor_etype(this, from->fntab->etype);
+	carray_etype_ctor(this, from->fntab->etype);
 
 	size_t size = from->size;
 	if (size > 0) {
-		(this->fntab)->alloc_size(this,size);
+		pca_alloc(this,size);
 	}
 }
 
 static void phiz_carray_copy_ctor( p_carray_obj to, p_carray_obj from)
 {
 	
-	carray_ctor_copy(to, from);
+	carray_copy_ctor(to, from);
 
 }
 
@@ -226,13 +217,20 @@ static void phiz_carray_copy_ctor( p_carray_obj to, p_carray_obj from)
 static zend_object *phiz_carray_new_ex(zend_class_entry *class_type,
 									zend_object *orig, bool clone_orig)
 {
-	pz_carray_obj 		  intern;
+	pz_carray 		  	   intern;
 	zend_class_entry      *parent = class_type;
 	bool                   inherited = false;
 
 	intern = zend_object_alloc(sizeof(phiz_carray_obj), class_type);
+
 	zend_object_std_init(&intern->std, class_type);
+
 	object_properties_init(&intern->std, class_type);
+
+	if (orig && clone_orig) {
+		pz_carray other = phiz_carray_from_obj(orig);
+		phiz_carray_copy_ctor(&intern->cobj, &other->cobj);
+	}
 	while(parent) {
 		if (parent == phiz_ce_CArray) {
 			intern->std.handlers = &phiz_handler_CArray;
@@ -254,11 +252,51 @@ static zend_object *phiz_carray_new(zend_class_entry *class_type)
 	return phiz_carray_new_ex(class_type, NULL, 0);
 }
 
+
+static void phiz_carray_free_storage(zend_object *object)
+{
+	pz_carray intern = phiz_carray_from_obj(object);
+	pca_free(&intern->cobj);
+	zend_object_std_dtor(&intern->std);
+}
+
+static zend_object *phiz_carray_clone(zend_object *old_object)
+{
+	zend_object *new_object = phiz_carray_new_ex(old_object->ce, old_object, 1);
+
+	zend_objects_clone_members(new_object, old_object);
+
+	return new_object;
+}
+
+
+PHPAPI void phiz_register_std_class(zend_class_entry ** ppce, char * class_name, void * obj_ctor, const zend_function_entry * function_list)
+{
+	zend_class_entry ce;
+
+	INIT_CLASS_ENTRY_EX(ce, class_name, strlen(class_name), function_list);
+	*ppce = zend_register_internal_class(&ce);
+
+	/* entries changed by initialize */
+	if (obj_ctor) {
+		(*ppce)->create_object = obj_ctor;
+	}
+}
+
 PHP_MINIT_FUNCTION(phiz_carray)
 {
-	phiz_ce_CArray = register_class_CArray(zend_ce_iterator);
-	phiz_ce_CArray->create_object  = phiz_carray_new;
+	phiz_register_std_class(&phiz_ce_CArray, "CArray", phiz_carray_new, class_CArray_methods);
 	memcpy(&phiz_handler_CArray, &std_object_handlers, sizeof(zend_object_handlers));
-	phiz_handler_CArray.offset = XtOffsetOf(phiz_carray_obj, std);
 
+	phiz_handler_CArray.offset = XtOffsetOf(phiz_carray_obj, std);
+	phiz_handler_CArray.clone_obj = phiz_carray_clone;
+	phiz_handler_CArray.dtor_obj  = zend_objects_destroy_object;
+	phiz_handler_CArray.free_obj  = phiz_carray_free_storage;
+
+	//REGISTER_PHIZ_IMPLEMENTS(CArray, Aggregate);
+
+	REGISTER_PHIZ_IMPLEMENTS(CArray, ArrayAccess);
+	REGISTER_PHIZ_IMPLEMENTS(CArray, Countable);
+
+	return SUCCESS;
 }

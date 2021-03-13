@@ -31,13 +31,8 @@ typedef struct _carray_obj* p_carray_obj;
 typedef struct _carray_obj_fntab {
 	int 	etype;
 	size_t  esize;
-
-	bool (*isEmpty)(p_carray_obj self);
 	void (*init_elems)(p_carray_obj self, long from, long to);
 	void (*copy_elems)(p_carray_obj self, long offset,  p_carray_obj other, long begin, long end);
-	void (*alloc_size)(p_carray_obj self, long size);
-	void (*resize)(p_carray_obj self, long size);
-
 	void (*get_zval)(p_carray_obj self, long offset, zval *zp); 
 	int (*set_zval)(p_carray_obj self, long offset, zval *zp); 
 }
@@ -52,7 +47,12 @@ typedef struct _carray_obj {
 carray_obj;
 
 // forward declarations
-void carray_ctor_etype(p_carray_obj this, int etype);
-void carray_ctor_copy(p_carray_obj this, p_carray_obj from);
+void carray_etype_ctor(p_carray_obj this, int etype);
+void carray_copy_ctor(p_carray_obj this, p_carray_obj from);
+
+// works on all carray_obj
+void pca_resize(p_carray_obj this, long size);
+void pca_alloc(p_carray_obj this, long size);
+void pca_free(p_carray_obj this);
 
 #endif

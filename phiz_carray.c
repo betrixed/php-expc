@@ -142,7 +142,7 @@ PHP_METHOD(CArray, offsetGet)
 		fntab->get_zval(pobj, zindex, return_value);
 	}
 	else {
-		// TODO: throw OutOfRange 
+		zend_throw_exception(phiz_ce_RuntimeException, "Index invalid or out of range", 0);
 		RETURN_NULL();
 	}
 }
@@ -153,20 +153,25 @@ PHP_METHOD(CArray, offsetSet)
 	zend_long		zindex;
 	pz_carray 		intern;
 	zval*            value;
+	int             set_error;
 
 	ZEND_PARSE_PARAMETERS_START(2, 2)
 		Z_PARAM_LONG(zindex)
 		Z_PARAM_ZVAL(value)
 	ZEND_PARSE_PARAMETERS_END();
 
+	intern = Z_PHIZ_CARRAY_P(ZEND_THIS);
 	p_carray_obj pobj = &intern->cobj;
 	carray_obj_fntab* fntab = pobj->fntab;
 
 	if ((zindex >= 0) && (zindex < pobj->size)) {	
-		pobj->fntab->set_zval(pobj, zindex, value);
+		set_error = pobj->fntab->set_zval(pobj, zindex, value);
+		if (set_error != CATE_OK) {
+			zend_throw_exception(phiz_ce_RuntimeException, "Element value outside range", 0);
+		}
 	}
 	else {
-		// TODO: throw OutOfRange 
+		zend_throw_exception(phiz_ce_RuntimeException, "Index invalid or out of range", 0);
 	}
 }
 
@@ -283,6 +288,8 @@ PHPAPI void phiz_register_std_class(zend_class_entry ** ppce, char * class_name,
 	}
 }
 
+
+
 PHP_MINIT_FUNCTION(phiz_carray)
 {
 	phiz_register_std_class(&phiz_ce_CArray, "CArray", phiz_carray_new, class_CArray_methods);
@@ -292,6 +299,9 @@ PHP_MINIT_FUNCTION(phiz_carray)
 	phiz_handler_CArray.clone_obj = phiz_carray_clone;
 	phiz_handler_CArray.dtor_obj  = zend_objects_destroy_object;
 	phiz_handler_CArray.free_obj  = phiz_carray_free_storage;
+
+	REGISTER_PHIZ_CLASS_CONST_LONG("CARRAY_INT8", (zend_long)CAT_INT8);
+	REGISTER_PHIZ_CLASS_CONST_LONG("CARRAY_UINT32", (zend_long)CAT_UINT32);
 
 	//REGISTER_PHIZ_IMPLEMENTS(CArray, Aggregate);
 

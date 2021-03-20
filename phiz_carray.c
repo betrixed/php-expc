@@ -14,6 +14,7 @@
 #include "Zend/zend_interfaces.h"
 #define phiz_ce_Countable     zend_ce_countable
 #define phiz_ce_ArrayAccess	  zend_ce_arrayaccess
+#define phiz_ce_Iterator	  zend_ce_iterator
 
 
 
@@ -21,6 +22,7 @@ typedef struct _phiz_carray_obj* pz_carray;
 
 typedef struct _phiz_carray_obj {
 	carray_obj           cobj;
+	long 		  	     current; // 0 - indexed offset
 	zend_object          std;
 } phiz_carray_obj;
 
@@ -59,6 +61,7 @@ PHP_METHOD(CArray, __construct)
 		pca_alloc(&intern->cobj, size);
 		intern->cobj.fntab->init_elems(&intern->cobj, 0, size);
 	}
+	intern->current = 0;
 	// no return value
 }
 
@@ -75,6 +78,7 @@ PHP_METHOD(CArray, setSize)
 	intern = Z_PHIZ_CARRAY_P(ZEND_THIS);
 
 	pca_resize(&intern->cobj, size);
+	intern->current = 0;
 	RETURN_TRUE;
 
 }
@@ -200,6 +204,60 @@ PHP_METHOD(CArray, offsetUnset)
 	// Not implemented
 }
 
+/* {{{ Returns state of iteration */
+PHP_METHOD(CArray, valid)
+{
+	pz_carray  intern;
+
+	intern = Z_PHIZ_CARRAY_P(ZEND_THIS);
+	if (intern->current < intern->cobj.size) {
+		// empty
+		RETVAL_TRUE;
+	}
+	else {
+		RETVAL_FALSE;
+	}
+}
+
+
+/* {{{ Returns nothing (undefined), update internals */
+PHP_METHOD(CArray, next)
+{
+	pz_carray  intern = Z_PHIZ_CARRAY_P(ZEND_THIS);
+	intern->current++;
+}
+
+/* {{{ Returns nothing (undefined), update internals */
+PHP_METHOD(CArray, rewind)
+{
+	pz_carray  intern = Z_PHIZ_CARRAY_P(ZEND_THIS);
+	intern->current = 0;
+}
+
+
+/* {{{ Return a zval longint */
+PHP_METHOD(CArray, key)
+{
+	pz_carray  intern = Z_PHIZ_CARRAY_P(ZEND_THIS);
+	ZVAL_LONG(return_value, intern->current);
+}
+
+/* {{{ Return zval as value */
+PHP_METHOD(CArray, current)
+{
+	pz_carray  intern = Z_PHIZ_CARRAY_P(ZEND_THIS);
+	p_carray_obj pobj = &intern->cobj;
+
+	if ((intern->current >= 0) && (intern->current < pobj->size)) {
+		pobj->fntab->get_zval(pobj, intern->current, return_value);
+	}
+	else {
+		zend_throw_exception(phiz_ce_RuntimeException, "Iterator index out of range", 0);
+		RETURN_NULL();
+	}
+
+}
+
 static void phiz_carray_ctor(p_carray_obj this, p_carray_obj from)
 {
 
@@ -290,6 +348,7 @@ PHPAPI void phiz_register_std_class(zend_class_entry ** ppce, char * class_name,
 
 
 
+
 PHP_MINIT_FUNCTION(phiz_carray)
 {
 	phiz_register_std_class(&phiz_ce_CArray, "CArray", phiz_carray_new, class_CArray_methods);
@@ -307,6 +366,6 @@ PHP_MINIT_FUNCTION(phiz_carray)
 
 	REGISTER_PHIZ_IMPLEMENTS(CArray, ArrayAccess);
 	REGISTER_PHIZ_IMPLEMENTS(CArray, Countable);
-
+	REGISTER_PHIZ_IMPLEMENTS(CArray, Iterator);
 	return SUCCESS;
 }

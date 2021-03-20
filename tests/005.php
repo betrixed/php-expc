@@ -39,6 +39,13 @@ $e[0] = 12;
 
 echo "d[0] =  " . $d[0] . PHP_EOL;
 
+foreach($b as $key => $val) {
+	echo $key . " " . $val . PHP_EOL;
+}
+
 foreach($e as $key => $val) {
+	echo $key . " " . $val . PHP_EOL;
+}
+foreach($b as $key => $val) {
 	echo $key . " " . $val . PHP_EOL;
 }

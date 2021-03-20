@@ -1,6 +1,6 @@
 <?php
 /** @generate-function-entries */
-class CArray implements  ArrayAccess, Countable {
+class CArray implements  ArrayAccess, Countable, Iterator {
 	public function __construct(int $size, int $cptype) {}
 
     /** @return int */
@@ -39,5 +39,20 @@ class CArray implements  ArrayAccess, Countable {
      * @return void
      */
     public function offsetUnset($index) {}
+
+    /**   @return mixed */
+    public function current() {}
+
+    /** @return scaler */
+    public function key() {}
+
+    /** @return void */
+    public function next() {}
+
+    /** @return void */
+    public function rewind() {}
+
+    /** @return bool */
+    public function valid() {}
 
 }

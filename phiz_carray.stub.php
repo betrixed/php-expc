@@ -9,7 +9,17 @@ class CArray implements  ArrayAccess, Countable, Iterator {
     /** @return array */
     public function toArray() {}
 
+    /** @return int */
+    public  function getType() {}
+
+    /** @return string */
+    public function getTypeName() {}
+    
+    /** @return int */
+    public function getTypeSize() {}
+
 	    /** @return int */
+    
     public function getSize() {}
 
     /** @return bool */

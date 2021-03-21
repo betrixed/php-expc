@@ -15,8 +15,10 @@ typedef enum _CArray_EType {
 	CAT_UINT16 = 5,
 	CAT_INT32 = 8,
 	CAT_UINT32 = 9,
-	CAT_REAL32 = 16,
-	CAT_REAL64 = 32
+	CAT_INT64 = 16,
+	CAT_UINT64 = 17,
+	CAT_REAL32 = 32,
+	CAT_REAL64 = 64
 } CArray_EType;
 
 typedef enum _CArray_Error {
@@ -31,6 +33,7 @@ typedef struct _carray_obj* p_carray_obj;
 typedef struct _carray_obj_fntab {
 	int 	etype;
 	size_t  esize;
+	char*	ename;
 	void (*init_elems)(p_carray_obj self, long from, long to);
 	void (*copy_elems)(p_carray_obj self, long offset,  p_carray_obj other, long begin, long end);
 	void (*get_zval)(p_carray_obj self, long offset, zval *zp); 
@@ -54,5 +57,6 @@ void carray_copy_ctor(p_carray_obj this, p_carray_obj from);
 void pca_resize(p_carray_obj this, long size);
 void pca_alloc(p_carray_obj this, long size);
 void pca_free(p_carray_obj this);
+char* pca_get_type_str(int etype);
 
 #endif

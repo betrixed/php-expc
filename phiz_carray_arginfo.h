@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 49912c3e051c07ad084d66d35fc34ad0d43d5f2c */
+ * Stub hash: ff4159514297ea5f018e25fc1455dcbc06f1171f */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_CArray___construct, 0, 0, 2)
 	ZEND_ARG_TYPE_INFO(0, size, IS_LONG, 0)
@@ -10,6 +10,12 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_CArray_count, 0, 0, 0)
 ZEND_END_ARG_INFO()
 
 #define arginfo_class_CArray_toArray arginfo_class_CArray_count
+
+#define arginfo_class_CArray_getType arginfo_class_CArray_count
+
+#define arginfo_class_CArray_getTypeName arginfo_class_CArray_count
+
+#define arginfo_class_CArray_getTypeSize arginfo_class_CArray_count
 
 #define arginfo_class_CArray_getSize arginfo_class_CArray_count
 
@@ -44,6 +50,9 @@ ZEND_END_ARG_INFO()
 ZEND_METHOD(CArray, __construct);
 ZEND_METHOD(CArray, count);
 ZEND_METHOD(CArray, toArray);
+ZEND_METHOD(CArray, getType);
+ZEND_METHOD(CArray, getTypeName);
+ZEND_METHOD(CArray, getTypeSize);
 ZEND_METHOD(CArray, getSize);
 ZEND_METHOD(CArray, setSize);
 ZEND_METHOD(CArray, offsetExists);
@@ -61,6 +70,9 @@ static const zend_function_entry class_CArray_methods[] = {
 	ZEND_ME(CArray, __construct, arginfo_class_CArray___construct, ZEND_ACC_PUBLIC)
 	ZEND_ME(CArray, count, arginfo_class_CArray_count, ZEND_ACC_PUBLIC)
 	ZEND_ME(CArray, toArray, arginfo_class_CArray_toArray, ZEND_ACC_PUBLIC)
+	ZEND_ME(CArray, getType, arginfo_class_CArray_getType, ZEND_ACC_PUBLIC)
+	ZEND_ME(CArray, getTypeName, arginfo_class_CArray_getTypeName, ZEND_ACC_PUBLIC)
+	ZEND_ME(CArray, getTypeSize, arginfo_class_CArray_getTypeSize, ZEND_ACC_PUBLIC)
 	ZEND_ME(CArray, getSize, arginfo_class_CArray_getSize, ZEND_ACC_PUBLIC)
 	ZEND_ME(CArray, setSize, arginfo_class_CArray_setSize, ZEND_ACC_PUBLIC)
 	ZEND_ME(CArray, offsetExists, arginfo_class_CArray_offsetExists, ZEND_ACC_PUBLIC)

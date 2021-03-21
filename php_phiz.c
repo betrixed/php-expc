@@ -13,6 +13,8 @@
 #include <ctype.h>
 
 #include "phiz_str8.h"
+#include "phiz_carray.h"
+
 
 ZEND_DECLARE_MODULE_GLOBALS(phiz)
 static PHP_GINIT_FUNCTION(phiz);

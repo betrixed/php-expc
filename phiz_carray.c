@@ -82,6 +82,41 @@ PHP_METHOD(CArray, setSize)
 	RETURN_TRUE;
 
 }
+
+PHP_METHOD(CArray, getType)
+{
+	pz_carray 		intern;
+	ZEND_PARSE_PARAMETERS_NONE();
+
+	intern = Z_PHIZ_CARRAY_P(ZEND_THIS);
+
+	RETURN_LONG(intern->cobj.fntab->etype);
+}
+
+PHP_METHOD(CArray, getTypeSize)
+{
+	pz_carray 		intern;
+	ZEND_PARSE_PARAMETERS_NONE();
+
+	intern = Z_PHIZ_CARRAY_P(ZEND_THIS);
+
+	RETURN_LONG(intern->cobj.fntab->esize);
+}
+
+PHP_METHOD(CArray, getTypeName)
+{
+	pz_carray 		intern;
+
+
+	ZEND_PARSE_PARAMETERS_NONE();
+
+	intern = Z_PHIZ_CARRAY_P(ZEND_THIS);
+
+	ZVAL_STRING(return_value, intern->cobj.fntab->ename);
+
+}
+
+
 PHP_METHOD(CArray, getSize)
 {
 	pz_carray 		intern;
@@ -359,9 +394,16 @@ PHP_MINIT_FUNCTION(phiz_carray)
 	phiz_handler_CArray.dtor_obj  = zend_objects_destroy_object;
 	phiz_handler_CArray.free_obj  = phiz_carray_free_storage;
 
-	REGISTER_PHIZ_CLASS_CONST_LONG("CARRAY_INT8", (zend_long)CAT_INT8);
-	REGISTER_PHIZ_CLASS_CONST_LONG("CARRAY_UINT32", (zend_long)CAT_UINT32);
-
+	REGISTER_PHIZ_CLASS_CONST_LONG("CA_INT8", (zend_long)CAT_INT8);
+	REGISTER_PHIZ_CLASS_CONST_LONG("CA_UINT8", (zend_long)CAT_UINT8);
+	REGISTER_PHIZ_CLASS_CONST_LONG("CA_INT16", (zend_long)CAT_INT16);
+	REGISTER_PHIZ_CLASS_CONST_LONG("CA_UINT16", (zend_long)CAT_UINT16);
+	REGISTER_PHIZ_CLASS_CONST_LONG("CA_INT32", (zend_long)CAT_INT32);
+	REGISTER_PHIZ_CLASS_CONST_LONG("CA_UINT32", (zend_long)CAT_UINT32);
+	REGISTER_PHIZ_CLASS_CONST_LONG("CA_INT64", (zend_long)CAT_INT64);
+	REGISTER_PHIZ_CLASS_CONST_LONG("CA_UINT64", (zend_long)CAT_UINT64);
+	REGISTER_PHIZ_CLASS_CONST_LONG("CA_REAL32", (zend_long)CAT_REAL32);
+	REGISTER_PHIZ_CLASS_CONST_LONG("CA_REAL64", (zend_long)CAT_REAL64);
 	//REGISTER_PHIZ_IMPLEMENTS(CArray, Aggregate);
 
 	REGISTER_PHIZ_IMPLEMENTS(CArray, ArrayAccess);

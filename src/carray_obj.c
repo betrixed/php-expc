@@ -72,118 +72,111 @@ void pca_resize(p_carray_obj this, long size) {
 	this->size = size;
 }
 
-static void pca_initelems_uint32(p_carray_obj this, long from, long to) {
-	ZEND_ASSERT(from <= to);
-	ZEND_ASSERT(to <= this->size);
-
-	uint32_t* begin = (uint32_t*) this->elements + from;
-	uint32_t* end = (uint32_t*) this->elements + to;
-	while (begin != end) {
-		*begin++ = 0;
-	}
-}
-
-static void pca_initelems_int8(p_carray_obj this, long from, long to) {
-
-	ZEND_ASSERT(from <= to);
-	ZEND_ASSERT(to <= this->size);
-
-	int8_t* begin = (int8_t*) this->elements + from;
-	int8_t* end = (int8_t*) this->elements + to;
-	while (begin != end) {
-		*begin++ = 0;
-	}
-}
 
 
-static void pca_copyelems_uint32( p_carray_obj this, zend_long offset, 
-	p_carray_obj other, zend_long begin, zend_long end)
-{
-	ZEND_ASSERT(offset >= 0);
-	ZEND_ASSERT(this->size - offset >= end - begin);
+// CAT_INT8
+#define PHIZ_CARRAY_ETYPE CAT_INT8
+#define PHIZ_CAST_TYPE int8_t
+#define PHIZ_CAST_NAME int8
+#define PHIZ_ZVAL_TYPE LONG
+#define PHIZ_ZVAL_CAST_TYPE Z_LVAL_P
+#define PHIZ_CAST_MIN CHAR_MIN
+#define PHIZ_CAST_MAX CHAR_MAX
+#include "cast_macro.c"
 
-	uint32_t *to = (uint32_t*) this->elements + offset;
-	uint32_t *bgp = (uint32_t*) other->elements + begin;
-	uint32_t *ep = (uint32_t*) other->elements + end;
+// CAT_UINT8
+#define PHIZ_CARRAY_ETYPE CAT_UINT8
+#define PHIZ_CAST_TYPE uint8_t
+#define PHIZ_CAST_NAME uint8
+#define PHIZ_ZVAL_TYPE LONG
+#define PHIZ_ZVAL_CAST_TYPE Z_LVAL_P
+#define PHIZ_CAST_MIN 0
+#define PHIZ_CAST_MAX UINT8_MAX
+#include "cast_macro.c"
 
-	while (bgp != ep) {
-		*to++ = *bgp++;
-	}
-}
+// CAT_INT16
+#define PHIZ_CARRAY_ETYPE CAT_INT16
+#define PHIZ_CAST_TYPE  int16_t
+#define PHIZ_CAST_NAME  int16
+#define PHIZ_ZVAL_TYPE LONG
+#define PHIZ_ZVAL_CAST_TYPE Z_LVAL_P
+#define PHIZ_CAST_MIN INT16_MIN
+#define PHIZ_CAST_MAX INT16_MAX
+#include "cast_macro.c"
 
-static void pca_getzval_int8( p_carray_obj this, zend_long offset,  zval* retval)
-{
-	zend_long value = *((int8_t*) this->elements + offset);
-	ZVAL_LONG(retval,value);
-}
 
-static void pca_getzval_uint32( p_carray_obj this, zend_long offset,  zval* retval)
-{
-	zend_long value = *((uint32_t*) this->elements + offset);
-	ZVAL_LONG(retval,value);
-}
-
-static int pca_setzval_int8( p_carray_obj this, zend_long offset,  zval* setval)
-{
-	if (Z_TYPE_P(setval) != IS_LONG){
-		return CATE_TYPE;
-	}
-	zend_long val = Z_LVAL_P(setval);
-	if (val < CHAR_MIN || val > CHAR_MAX) {
-		return CATE_RANGE;
-	}
-	*((int8_t*) this->elements + offset) = val;
-	return CATE_OK;
-}
-
-static int pca_setzval_uint32( p_carray_obj this, zend_long offset,  zval* setval)
-{
-	if (Z_TYPE_P(setval) != IS_LONG){
-		return CATE_TYPE;
-	}
-	zend_long val = Z_LVAL_P(setval);
-	if (val < 0 || val > UINT_MAX) {
-		return  CATE_RANGE;
-	}
-	*((uint32_t*) this->elements + offset) = val;
-	return CATE_OK;
-}
-
-static void pca_copyelems_int8( p_carray_obj this, zend_long offset, 
-	p_carray_obj other, zend_long begin, zend_long end)
-{
-	ZEND_ASSERT(offset >= 0);
-	ZEND_ASSERT(this->size - offset >= end - begin);
-
-	int8_t *to = (int8_t*) this->elements + offset;
-	int8_t *bgp = (int8_t*) other->elements + begin;
-	int8_t *ep = (int8_t*) other->elements + end;
-
-	while (bgp != ep) {
-		*to++ = *bgp++;
-	}
-}
+// CAT_UINT16
+#define PHIZ_CARRAY_ETYPE CAT_UINT16
+#define PHIZ_CAST_TYPE  uint16_t
+#define PHIZ_CAST_NAME  uint16
+#define PHIZ_ZVAL_TYPE LONG
+#define PHIZ_ZVAL_CAST_TYPE Z_LVAL_P
+#define PHIZ_CAST_MIN 0
+#define PHIZ_CAST_MAX UINT16_MAX
+#include "cast_macro.c"
 
 
 
-static carray_obj_fntab int8_fntab = {
-	CAT_INT8,
-	sizeof(int8_t),
-	
-	pca_initelems_int8,
-	pca_copyelems_int8,
-	pca_getzval_int8,
-	pca_setzval_int8
-};
-static carray_obj_fntab uint32_fntab = {
-	CAT_UINT32,
-	sizeof(uint32_t),
+// CAT_INT32
+#define PHIZ_CARRAY_ETYPE CAT_INT32
+#define PHIZ_CAST_TYPE int32_t
+#define PHIZ_CAST_NAME int32
+#define PHIZ_ZVAL_TYPE LONG
+#define PHIZ_ZVAL_CAST_TYPE Z_LVAL_P
+#define PHIZ_CAST_MIN INT32_MIN
+#define PHIZ_CAST_MAX INT32_MAX
+#include "cast_macro.c"
 
-	pca_initelems_uint32,
-	pca_copyelems_uint32,
-	pca_getzval_uint32,
-	pca_setzval_uint32
-};
+// CAT_UINT32
+#define PHIZ_CARRAY_ETYPE CAT_UINT32
+#define PHIZ_CAST_TYPE uint32_t
+#define PHIZ_CAST_NAME uint32
+#define PHIZ_ZVAL_TYPE LONG
+#define PHIZ_ZVAL_CAST_TYPE Z_LVAL_P
+#define PHIZ_CAST_MIN 0
+#define PHIZ_CAST_MAX UINT32_MAX
+#include "cast_macro.c"
+
+// CAT_INT64
+#define PHIZ_CARRAY_ETYPE CAT_INT64
+#define PHIZ_CAST_TYPE int64_t
+#define PHIZ_CAST_NAME int64
+#define PHIZ_ZVAL_TYPE LONG
+#define PHIZ_ZVAL_CAST_TYPE Z_LVAL_P
+#define PHIZ_CAST_MIN INT64_MIN
+#define PHIZ_CAST_MAX INT64_MAX
+#include "cast_macro.c"
+
+// CAT_UINT64
+#define PHIZ_CARRAY_ETYPE CAT_UINT64
+#define PHIZ_CAST_TYPE uint64_t
+#define PHIZ_CAST_NAME uint64
+#define PHIZ_ZVAL_TYPE LONG
+#define PHIZ_ZVAL_CAST_TYPE Z_LVAL_P
+#define PHIZ_CAST_MIN 0
+#define PHIZ_CAST_MAX UINT64_MAX
+#include "cast_macro.c"
+
+// CAT_REAL32
+#define PHIZ_CARRAY_ETYPE CAT_REAL32
+#define PHIZ_CAST_TYPE float
+#define PHIZ_CAST_NAME float
+#define PHIZ_ZVAL_TYPE DOUBLE
+#define PHIZ_ZVAL_CAST_TYPE Z_DVAL_P
+#define PHIZ_CAST_MIN -FLT_MAX
+#define PHIZ_CAST_MAX FLT_MAX
+#include "cast_macro.c"
+
+// CAT_REAL64
+
+#define PHIZ_CARRAY_ETYPE CAT_REAL64
+#define PHIZ_CAST_TYPE double
+#define PHIZ_CAST_NAME double
+#define PHIZ_ZVAL_TYPE DOUBLE
+#define PHIZ_ZVAL_CAST_TYPE Z_DVAL_P
+#define PHIZ_CAST_MIN -DBL_MAX
+#define PHIZ_CAST_MAX DBL_MAX
+#include "cast_macro.c"
 
 
 void carray_etype_ctor(p_carray_obj this, int etype) {
@@ -191,10 +184,33 @@ void carray_etype_ctor(p_carray_obj this, int etype) {
 		case CAT_INT8:
 			this->fntab = &int8_fntab;
 			break;
-		case CAT_UINT32: {
+		case CAT_UINT8:
+			this->fntab = &uint8_fntab;
+			break;
+		case CAT_INT16:
+			this->fntab = &int16_fntab;
+			break;
+		case CAT_UINT16:
+			this->fntab = &uint16_fntab;
+			break;
+		case CAT_INT32: 
+			this->fntab = &int32_fntab;
+			break;
+		case CAT_UINT32: 
 			this->fntab = &uint32_fntab;
 			break;
-		}
+		case CAT_INT64: 
+			this->fntab = &int64_fntab;
+			break;
+		case CAT_UINT64: 
+			this->fntab = &uint64_fntab;
+			break;
+		case CAT_REAL32: 
+			this->fntab = &float_fntab;
+			break;
+		case CAT_REAL64: 
+			this->fntab = &double_fntab;
+			break;
 	}
 	this->elements = NULL;
 	this->size = 0;

@@ -82,7 +82,6 @@ PHP_METHOD(Str8, iteratee)
 {
 	zval *object = ZEND_THIS;
 	phiz_str8_obj* intern;
-	zend_string *target;
 
 	intern = Z_PHIZ_STR8_P(object);
 	

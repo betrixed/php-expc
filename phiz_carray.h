@@ -19,5 +19,6 @@ PHP_MINIT_FUNCTION(phiz_carray);
 #define REGISTER_PHIZ_CLASS_CONST_LONG(const_name, value) \
 	zend_declare_class_constant_long(phiz_ce_CArray, const_name, sizeof(const_name)-1, (zend_long)value);
 
+PHPAPI zend_long spl_offset_convert_to_long(zval *offset);
 
 #endif	

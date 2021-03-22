@@ -9,6 +9,6 @@ unsigned int ucode8Fore(
 	unsigned int slen, // size
 	char32_t* d       // 32-bit unicode value
 	);
-const char32_t INVALID_CHAR;
+extern const char32_t INVALID_CHAR;
 
 #endif

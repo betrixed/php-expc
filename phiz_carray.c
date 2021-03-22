@@ -21,8 +21,16 @@
 typedef struct _phiz_carray_obj* pz_carray;
 
 typedef struct _phiz_carray_obj {
-	carray_obj           cobj;
+	carray_obj           cobj;		// embedded polymorphic array
 	long 		  	     current; // 0 - indexed offset
+	//-- these ackward complicating function pointers 
+	//-- are here for the case when a derived class object implements an override method
+	zend_function       *fptr_offset_get;
+	zend_function       *fptr_offset_set;
+	zend_function       *fptr_offset_has;
+	zend_function       *fptr_offset_del;
+	zend_function       *fptr_count;
+	//-- standard object
 	zend_object          std;
 } phiz_carray_obj;
 
@@ -340,7 +348,29 @@ static zend_object *phiz_carray_new_ex(zend_class_entry *class_type,
 
 	ZEND_ASSERT(parent);
 
-	ZEND_ASSERT(!inherited);
+	if (inherited) {
+		intern->fptr_offset_get = zend_hash_str_find_ptr(&class_type->function_table, "offsetget", sizeof("offsetget") - 1);
+		if (intern->fptr_offset_get->common.scope == parent) {
+			intern->fptr_offset_get = NULL;
+		}
+		intern->fptr_offset_set = zend_hash_str_find_ptr(&class_type->function_table, "offsetset", sizeof("offsetset") - 1);
+		if (intern->fptr_offset_set->common.scope == parent) {
+			intern->fptr_offset_set = NULL;
+		}
+		intern->fptr_offset_has = zend_hash_str_find_ptr(&class_type->function_table, "offsetexists", sizeof("offsetexists") - 1);
+		if (intern->fptr_offset_has->common.scope == parent) {
+			intern->fptr_offset_has = NULL;
+		}
+		intern->fptr_offset_del = zend_hash_str_find_ptr(&class_type->function_table, "offsetunset", sizeof("offsetunset") - 1);
+		if (intern->fptr_offset_del->common.scope == parent) {
+			intern->fptr_offset_del = NULL;
+		}
+		intern->fptr_count = zend_hash_str_find_ptr(&class_type->function_table, "count", sizeof("count") - 1);
+		if (intern->fptr_count->common.scope == parent) {
+			intern->fptr_count = NULL;
+		}
+
+	}
 
 	return &intern->std;
 	
@@ -381,8 +411,232 @@ PHPAPI void phiz_register_std_class(zend_class_entry ** ppce, char * class_name,
 	}
 }
 
+// direct steal from spl_offset_convert_to_long
+PHPAPI zend_long phiz_offset_convert_to_long(zval *offset) /* {{{ */
+{
+	zend_ulong idx;
 
+try_again:
+	switch (Z_TYPE_P(offset)) {
+	case IS_STRING:
+		if (ZEND_HANDLE_NUMERIC(Z_STR_P(offset), idx)) {
+			return idx;
+		}
+		break;
+	case IS_DOUBLE:
+		return zend_dval_to_lval(Z_DVAL_P(offset));
+	case IS_LONG:
+		return Z_LVAL_P(offset);
+	case IS_FALSE:
+		return 0;
+	case IS_TRUE:
+		return 1;
+	case IS_REFERENCE:
+		offset = Z_REFVAL_P(offset);
+		goto try_again;
+	case IS_RESOURCE:
+		return Z_RES_HANDLE_P(offset);
+	}
+	return -1;
+}
 
+static zval *carray_obj_read_dimension_helper(pz_carray intern, zval *offset)
+{
+	zend_long index;
+
+	/* we have to return NULL on error here to avoid memleak because of
+	 * ZE duplicating uninitialized_zval_ptr */
+	if (!offset) {
+		zend_throw_exception(phiz_ce_RuntimeException, "Index invalid or out of range", 0);
+		return NULL;
+	}
+
+	if (Z_TYPE_P(offset) != IS_LONG) {
+		index = phiz_offset_convert_to_long(offset);
+	} else {
+		index = Z_LVAL_P(offset);
+	}
+
+	
+	if (index < 0 || index >= intern->cobj.size) {
+		zend_throw_exception(phiz_ce_RuntimeException, "Index invalid or out of range", 0);
+		return NULL;
+	} else {
+		// reuse of zval* offset is only option here
+		intern->cobj.fntab->get_zval(&intern->cobj, index, offset);
+		return offset;
+	}
+}
+
+static int carray_obj_has_dimension_helper(pz_carray intern, zval *offset, int check_empty)
+{
+	zend_long index;
+	int retval;
+
+	if (Z_TYPE_P(offset) != IS_LONG) {
+		index = phiz_offset_convert_to_long(offset);
+	} else {
+		index = Z_LVAL_P(offset);
+	}
+
+	if (index < 0 || index >= intern->cobj.size) {
+		retval = 0;
+	} else {
+		// *EMPTY* values are not implemented
+		return  1;
+		/*if (check_empty) {
+			retval = zend_is_true(&intern->array.elements[index]);
+		} else {
+			retval = Z_TYPE(intern->array.elements[index]) != IS_NULL;
+		}
+		*/
+	}
+
+	return retval;
+}
+
+static int carray_obj_has_dimension(zend_object *object, zval *offset, int check_empty)
+{
+	pz_carray intern = phiz_carray_from_obj(object);
+
+	if (intern->fptr_offset_has) {
+		zval rv;
+		zend_bool result;
+
+		SEPARATE_ARG_IF_REF(offset);
+		zend_call_method_with_1_params(object, intern->std.ce, &intern->fptr_offset_has, "offsetExists", &rv, offset);
+		zval_ptr_dtor(offset);
+		result = zend_is_true(&rv);
+		zval_ptr_dtor(&rv);
+		return result;
+	}
+
+	return carray_obj_has_dimension_helper(intern, offset, check_empty);
+}
+
+static zval *carray_obj_read_dimension(
+	zend_object *object, zval *offset, int type, zval *rv)
+{
+	pz_carray intern = phiz_carray_from_obj(object);
+
+	if (type == BP_VAR_IS && !carray_obj_has_dimension(object, offset, 0)) {
+		return &EG(uninitialized_zval);
+	}
+
+	if (intern->fptr_offset_get) {
+		zval tmp;
+		if (!offset) {
+			ZVAL_NULL(&tmp);
+			offset = &tmp;
+		} else {
+			SEPARATE_ARG_IF_REF(offset);
+		}
+		zend_call_method_with_1_params(object, intern->std.ce, &intern->fptr_offset_get, "offsetGet", rv, offset);
+		zval_ptr_dtor(offset);
+		if (!Z_ISUNDEF_P(rv)) {
+			return rv;
+		}
+		return &EG(uninitialized_zval);
+	}
+
+	return carray_obj_read_dimension_helper(intern, offset);
+}
+
+static void carray_obj_write_dimension_helper(pz_carray intern, zval *offset, zval *value)
+{
+	zend_long index;
+
+	if (!offset) {
+		/* '$array[] = value' syntax is not supported */
+		zend_throw_exception(phiz_ce_RuntimeException, "Index invalid or out of range", 0);
+		return;
+	}
+
+	if (Z_TYPE_P(offset) != IS_LONG) {
+		index = phiz_offset_convert_to_long(offset);
+	} else {
+		index = Z_LVAL_P(offset);
+	}
+
+	if (index < 0 || index >= intern->cobj.size) {
+		zend_throw_exception(phiz_ce_RuntimeException, "Index invalid or out of range", 0);
+		return;
+	} else {
+		intern->cobj.fntab->set_zval(&intern->cobj, index, value);
+	}
+}
+
+static void carray_obj_write_dimension(zend_object *object, zval *offset, zval *value)
+{
+	zval tmp;
+	pz_carray intern = phiz_carray_from_obj(object);
+
+	if (intern->fptr_offset_set) {
+		if (!offset) {
+			ZVAL_NULL(&tmp);
+			offset = &tmp;
+		} else {
+			SEPARATE_ARG_IF_REF(offset);
+		}
+		SEPARATE_ARG_IF_REF(value);
+		zend_call_method_with_2_params(object, intern->std.ce, &intern->fptr_offset_set, "offsetSet", NULL, offset, value);
+		zval_ptr_dtor(value);
+		zval_ptr_dtor(offset);
+		return;
+	}
+
+	carray_obj_write_dimension_helper(intern, offset, value);
+}
+
+static void carray_obj_unset_dimension_helper(pz_carray intern, zval *offset)
+{
+	zend_long index;
+
+	if (Z_TYPE_P(offset) != IS_LONG) {
+		index = phiz_offset_convert_to_long(offset);
+	} else {
+		index = Z_LVAL_P(offset);
+	}
+
+	if (index < 0 || index >= intern->cobj.size) {
+		zend_throw_exception(phiz_ce_RuntimeException, "Index invalid or out of range", 0);
+		return;
+	} else {
+		/* NO EMPTY value token to set yet*/
+	}
+}
+
+static void carray_obj_unset_dimension(zend_object *object, zval *offset)
+{
+	pz_carray intern = phiz_carray_from_obj(object);
+
+	if (intern->fptr_offset_del) {
+		SEPARATE_ARG_IF_REF(offset);
+		zend_call_method_with_1_params(object, intern->std.ce, &intern->fptr_offset_del, "offsetUnset", NULL, offset);
+		zval_ptr_dtor(offset);
+		return;
+	}
+
+	carray_obj_unset_dimension_helper(intern, offset);
+}
+
+static int carray_obj_count_elements(zend_object *object, zend_long *count)
+{
+	pz_carray intern = phiz_carray_from_obj(object);
+	if (intern->fptr_count) {
+		zval rv;
+		zend_call_method_with_0_params(object, intern->std.ce, &intern->fptr_count, "count", &rv);
+		if (!Z_ISUNDEF(rv)) {
+			*count = zval_get_long(&rv);
+			zval_ptr_dtor(&rv);
+		} else {
+			*count = 0;
+		}
+	} else {
+		*count = intern->cobj.size;
+	}
+	return SUCCESS;
+}
 
 PHP_MINIT_FUNCTION(phiz_carray)
 {
@@ -393,6 +647,12 @@ PHP_MINIT_FUNCTION(phiz_carray)
 	phiz_handler_CArray.clone_obj = phiz_carray_clone;
 	phiz_handler_CArray.dtor_obj  = zend_objects_destroy_object;
 	phiz_handler_CArray.free_obj  = phiz_carray_free_storage;
+
+	phiz_handler_CArray.read_dimension  = carray_obj_read_dimension;
+	phiz_handler_CArray.write_dimension = carray_obj_write_dimension;
+	phiz_handler_CArray.unset_dimension = carray_obj_unset_dimension;
+	phiz_handler_CArray.has_dimension   = carray_obj_has_dimension;
+	phiz_handler_CArray.count_elements  = carray_obj_count_elements;
 
 	REGISTER_PHIZ_CLASS_CONST_LONG("CA_INT8", (zend_long)CAT_INT8);
 	REGISTER_PHIZ_CLASS_CONST_LONG("CA_UINT8", (zend_long)CAT_UINT8);

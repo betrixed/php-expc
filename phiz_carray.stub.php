@@ -1,6 +1,6 @@
 <?php
 /** @generate-function-entries */
-class CArray implements  ArrayAccess, Countable, Iterator {
+class CArray implements  IteratorAggregate, ArrayAccess, Countable {
 	public function __construct(int $size, int $cptype) {}
 
     /** @return int */
@@ -24,6 +24,9 @@ class CArray implements  ArrayAccess, Countable, Iterator {
 
     /** @return bool */
     public function setSize(int $size) {}
+
+    /** @return bool */
+    public function isSignedType() {}
 
     /**
      * @param int $index
@@ -50,19 +53,6 @@ class CArray implements  ArrayAccess, Countable, Iterator {
      */
     public function offsetUnset($index) {}
 
-    /**   @return mixed */
-    public function current() {}
 
-    /** @return scaler */
-    public function key() {}
-
-    /** @return void */
-    public function next() {}
-
-    /** @return void */
-    public function rewind() {}
-
-    /** @return bool */
-    public function valid() {}
-
+    public function getIterator(): Iterator {}
 }

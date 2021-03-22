@@ -15,7 +15,7 @@
 #define phiz_ce_Countable     zend_ce_countable
 #define phiz_ce_ArrayAccess	  zend_ce_arrayaccess
 #define phiz_ce_Iterator	  zend_ce_iterator
-
+#define phiz_ce_Aggregate     zend_ce_aggregate
 
 
 typedef struct _phiz_carray_obj* pz_carray;
@@ -33,6 +33,13 @@ typedef struct _phiz_carray_obj {
 	//-- standard object
 	zend_object          std;
 } phiz_carray_obj;
+
+typedef struct _carray_quickit {
+	zend_object_iterator intern;
+	zval                 result; // somehow to pass back the current value
+	zend_long            current;
+} carray_quickit;
+
 
 static  pz_carray phiz_carray_from_obj(zend_object *obj)
 {
@@ -123,7 +130,20 @@ PHP_METHOD(CArray, getTypeName)
 	ZVAL_STRING(return_value, intern->cobj.fntab->ename);
 
 }
+PHP_METHOD(CArray, isSignedType)
+{
+	pz_carray 		intern;
 
+
+	ZEND_PARSE_PARAMETERS_NONE();
+
+	intern = Z_PHIZ_CARRAY_P(ZEND_THIS);
+
+	if ((intern->cobj.fntab->etype) & 0x01 == 0) {
+		RETURN_TRUE;
+	}
+	RETURN_FALSE;
+}
 
 PHP_METHOD(CArray, getSize)
 {
@@ -245,60 +265,6 @@ PHP_METHOD(CArray, offsetUnset)
 		Z_PARAM_LONG(zindex)
 	ZEND_PARSE_PARAMETERS_END();
 	// Not implemented
-}
-
-/* {{{ Returns state of iteration */
-PHP_METHOD(CArray, valid)
-{
-	pz_carray  intern;
-
-	intern = Z_PHIZ_CARRAY_P(ZEND_THIS);
-	if (intern->current < intern->cobj.size) {
-		// empty
-		RETVAL_TRUE;
-	}
-	else {
-		RETVAL_FALSE;
-	}
-}
-
-
-/* {{{ Returns nothing (undefined), update internals */
-PHP_METHOD(CArray, next)
-{
-	pz_carray  intern = Z_PHIZ_CARRAY_P(ZEND_THIS);
-	intern->current++;
-}
-
-/* {{{ Returns nothing (undefined), update internals */
-PHP_METHOD(CArray, rewind)
-{
-	pz_carray  intern = Z_PHIZ_CARRAY_P(ZEND_THIS);
-	intern->current = 0;
-}
-
-
-/* {{{ Return a zval longint */
-PHP_METHOD(CArray, key)
-{
-	pz_carray  intern = Z_PHIZ_CARRAY_P(ZEND_THIS);
-	ZVAL_LONG(return_value, intern->current);
-}
-
-/* {{{ Return zval as value */
-PHP_METHOD(CArray, current)
-{
-	pz_carray  intern = Z_PHIZ_CARRAY_P(ZEND_THIS);
-	p_carray_obj pobj = &intern->cobj;
-
-	if ((intern->current >= 0) && (intern->current < pobj->size)) {
-		pobj->fntab->get_zval(pobj, intern->current, return_value);
-	}
-	else {
-		zend_throw_exception(phiz_ce_RuntimeException, "Iterator index out of range", 0);
-		RETURN_NULL();
-	}
-
 }
 
 static void phiz_carray_ctor(p_carray_obj this, p_carray_obj from)
@@ -638,6 +604,104 @@ static int carray_obj_count_elements(zend_object *object, zend_long *count)
 	return SUCCESS;
 }
 
+/* Create a new iterator from a SplFixedArray instance. */
+PHP_METHOD(CArray, getIterator)
+{
+	if (zend_parse_parameters_none() == FAILURE) {
+		return;
+	}
+
+	zend_create_internal_iterator_zval(return_value, ZEND_THIS);
+}
+
+
+
+
+static void carray_quickit_dtor(zend_object_iterator *iter)
+{
+	zval_ptr_dtor(&iter->data);
+	zval_ptr_dtor( &((carray_quickit*)iter)->result );
+}
+
+static void carray_quickit_rewind(zend_object_iterator *iter)
+{
+	((carray_quickit*)iter)->current = 0;
+}
+
+static int carray_quickit_valid(zend_object_iterator *iter)
+{
+	carray_quickit     *iterator = (carray_quickit*)iter;
+	pz_carray object   = Z_PHIZ_CARRAY_P(&iter->data);
+
+	if (iterator->current >= 0 && iterator->current < object->cobj.size) {
+		return SUCCESS;
+	}
+
+	return FAILURE;
+}
+
+static zval *carray_quickit_get_current_data(zend_object_iterator *iter)
+{
+	long   zindex;
+	zval*  data;
+	zval*  result;
+
+	carray_quickit     *iterator = (carray_quickit*)iter;
+	pz_carray object   = Z_PHIZ_CARRAY_P(&iter->data);
+
+	
+	zindex = iterator->current;
+	if (zindex < 0 || zindex >= object->cobj.size) {
+		zend_throw_exception(phiz_ce_RuntimeException, "Index invalid or out of range", 0);
+		return NULL;
+	}
+	p_carray_obj pobj = &object->cobj;
+	result = &iterator->result;
+	pobj->fntab->get_zval(pobj,zindex,result);
+	return result;
+}
+
+static void carray_quickit_get_current_key(zend_object_iterator *iter, zval *key)
+{
+	ZVAL_LONG(key, ((carray_quickit*)iter)->current);
+}
+
+static void carray_quickit_move_forward(zend_object_iterator *iter)
+{
+	((carray_quickit*)iter)->current++;
+}
+
+static const zend_object_iterator_funcs carray_quickit_funcs = {
+	carray_quickit_dtor,
+	carray_quickit_valid,
+	carray_quickit_get_current_data,
+	carray_quickit_get_current_key,
+	carray_quickit_move_forward,
+	carray_quickit_rewind,
+	NULL,
+	NULL, /* get_gc */
+};
+
+zend_object_iterator *carray_get_iterator(
+	zend_class_entry *ce, zval *object, int by_ref)
+{
+	carray_quickit *iterator;
+
+	if (by_ref) {
+		zend_throw_error(NULL, "An iterator cannot be used with foreach by reference");
+		return NULL;
+	}
+
+	iterator = emalloc(sizeof(carray_quickit));
+
+	zend_iterator_init((zend_object_iterator*)iterator);
+	ZVAL_UNDEF(&iterator->result);
+	ZVAL_OBJ_COPY(&iterator->intern.data, Z_OBJ_P(object));
+	iterator->intern.funcs = &carray_quickit_funcs;
+
+	return &iterator->intern;
+}
+
 PHP_MINIT_FUNCTION(phiz_carray)
 {
 	phiz_register_std_class(&phiz_ce_CArray, "CArray", phiz_carray_new, class_CArray_methods);
@@ -664,10 +728,14 @@ PHP_MINIT_FUNCTION(phiz_carray)
 	REGISTER_PHIZ_CLASS_CONST_LONG("CA_UINT64", (zend_long)CAT_UINT64);
 	REGISTER_PHIZ_CLASS_CONST_LONG("CA_REAL32", (zend_long)CAT_REAL32);
 	REGISTER_PHIZ_CLASS_CONST_LONG("CA_REAL64", (zend_long)CAT_REAL64);
-	//REGISTER_PHIZ_IMPLEMENTS(CArray, Aggregate);
 
+	REGISTER_PHIZ_IMPLEMENTS(CArray, Aggregate);
 	REGISTER_PHIZ_IMPLEMENTS(CArray, ArrayAccess);
 	REGISTER_PHIZ_IMPLEMENTS(CArray, Countable);
-	REGISTER_PHIZ_IMPLEMENTS(CArray, Iterator);
+	
+
+	phiz_ce_CArray->get_iterator = carray_get_iterator;
+	phiz_ce_CArray->ce_flags |= ZEND_ACC_REUSE_GET_ITERATOR;
+
 	return SUCCESS;
 }

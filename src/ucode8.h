@@ -5,7 +5,7 @@
 
 //! return number of character units consumed, and unicode code value
 unsigned int ucode8Fore(
-	char const* cpt, // buffer pointer
+	char const* cpmt, // buffer pointer
 	unsigned int slen, // size
 	char32_t* d       // 32-bit unicode value
 	);

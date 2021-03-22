@@ -12,6 +12,7 @@ class CArray implements  ArrayAccess, Countable, Iterator {
     /** @return int */
     public  function getType() {}
 
+
     /** @return string */
     public function getTypeName() {}
     
@@ -21,6 +22,18 @@ class CArray implements  ArrayAccess, Countable, Iterator {
 	    /** @return int */
     
     public function getSize() {}
+
+    /** @return mixed 
+     *  @param int $index
+    */
+    public function getValue(int $index) {}
+
+
+    /**
+     * @param int $index
+     * @return void
+     */
+    public function setValue(int $index, mixed $value) {}
 
     /** @return bool */
     public function setSize(int $size) {}

@@ -186,8 +186,59 @@ PHP_METHOD(CArray, offsetGet)
 	}
 }
 
+/* Returns the value at the specified $index. */
+PHP_METHOD(CArray, getValue)
+{
+	zend_long		zindex;
+	pz_carray 		intern;
+
+	ZEND_PARSE_PARAMETERS_START(1, 1)
+		Z_PARAM_LONG(zindex)
+	ZEND_PARSE_PARAMETERS_END();
+
+	intern = Z_PHIZ_CARRAY_P(ZEND_THIS);
+	
+	p_carray_obj pobj = &intern->cobj;
+	carray_obj_fntab* fntab = pobj->fntab;
+
+	if ((zindex >= 0) && (zindex < pobj->size)) {
+		fntab->get_zval(pobj, zindex, return_value);
+	}
+	else {
+		zend_throw_exception(phiz_ce_RuntimeException, "Index invalid or out of range", 0);
+		RETURN_NULL();
+	}
+}
 /* Sets the value at the specified $index to $newval. */
 PHP_METHOD(CArray, offsetSet)
+{
+	zend_long		zindex;
+	pz_carray 		intern;
+	zval*            value;
+	int             set_error;
+
+	ZEND_PARSE_PARAMETERS_START(2, 2)
+		Z_PARAM_LONG(zindex)
+		Z_PARAM_ZVAL(value)
+	ZEND_PARSE_PARAMETERS_END();
+
+	intern = Z_PHIZ_CARRAY_P(ZEND_THIS);
+	p_carray_obj pobj = &intern->cobj;
+	carray_obj_fntab* fntab = pobj->fntab;
+
+	if ((zindex >= 0) && (zindex < pobj->size)) {	
+		set_error = pobj->fntab->set_zval(pobj, zindex, value);
+		if (set_error != CATE_OK) {
+			zend_throw_exception(phiz_ce_RuntimeException, "Element value outside range", 0);
+		}
+	}
+	else {
+		zend_throw_exception(phiz_ce_RuntimeException, "Index invalid or out of range", 0);
+	}
+}
+
+/* Sets the value at the specified $index to $newval. */
+PHP_METHOD(CArray, setValue)
 {
 	zend_long		zindex;
 	pz_carray 		intern;

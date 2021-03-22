@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: ff4159514297ea5f018e25fc1455dcbc06f1171f */
+ * Stub hash: f537c381ee40cca7818a10c75fbdefc73fd72cd4 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_CArray___construct, 0, 0, 2)
 	ZEND_ARG_TYPE_INFO(0, size, IS_LONG, 0)
@@ -18,6 +18,15 @@ ZEND_END_ARG_INFO()
 #define arginfo_class_CArray_getTypeSize arginfo_class_CArray_count
 
 #define arginfo_class_CArray_getSize arginfo_class_CArray_count
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_CArray_getValue, 0, 0, 1)
+	ZEND_ARG_TYPE_INFO(0, index, IS_LONG, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_CArray_setValue, 0, 0, 2)
+	ZEND_ARG_TYPE_INFO(0, index, IS_LONG, 0)
+	ZEND_ARG_TYPE_INFO(0, value, IS_MIXED, 0)
+ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_CArray_setSize, 0, 0, 1)
 	ZEND_ARG_TYPE_INFO(0, size, IS_LONG, 0)
@@ -54,6 +63,8 @@ ZEND_METHOD(CArray, getType);
 ZEND_METHOD(CArray, getTypeName);
 ZEND_METHOD(CArray, getTypeSize);
 ZEND_METHOD(CArray, getSize);
+ZEND_METHOD(CArray, getValue);
+ZEND_METHOD(CArray, setValue);
 ZEND_METHOD(CArray, setSize);
 ZEND_METHOD(CArray, offsetExists);
 ZEND_METHOD(CArray, offsetGet);
@@ -74,6 +85,8 @@ static const zend_function_entry class_CArray_methods[] = {
 	ZEND_ME(CArray, getTypeName, arginfo_class_CArray_getTypeName, ZEND_ACC_PUBLIC)
 	ZEND_ME(CArray, getTypeSize, arginfo_class_CArray_getTypeSize, ZEND_ACC_PUBLIC)
 	ZEND_ME(CArray, getSize, arginfo_class_CArray_getSize, ZEND_ACC_PUBLIC)
+	ZEND_ME(CArray, getValue, arginfo_class_CArray_getValue, ZEND_ACC_PUBLIC)
+	ZEND_ME(CArray, setValue, arginfo_class_CArray_setValue, ZEND_ACC_PUBLIC)
 	ZEND_ME(CArray, setSize, arginfo_class_CArray_setSize, ZEND_ACC_PUBLIC)
 	ZEND_ME(CArray, offsetExists, arginfo_class_CArray_offsetExists, ZEND_ACC_PUBLIC)
 	ZEND_ME(CArray, offsetGet, arginfo_class_CArray_offsetGet, ZEND_ACC_PUBLIC)

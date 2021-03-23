@@ -91,6 +91,35 @@ function carray_test() {
 	$time_end = microtime(true);
 	echo "2time carray: " .  ($time_end - $time_start) / $mega . PHP_EOL;
 }
+
+function ds_test() {
+	
+	$mega = 1.0e-6;
+	$mem_start = 0;
+	$mem_end = $mem_start;
+	$mem_start = memory_get_usage();
+	$time_start = microtime(true);
+	$spl = new \DS\Vector();
+	$spl->allocate(100000);
+	echo "Vector capacity " . $spl->capacity() . PHP_EOL;
+	for($i = 0; $i < 100000; $i++) {
+		$spl->push($i);
+	}
+	$time_end = microtime(true);
+	$mem_end = memory_get_usage();
+
+	echo "memory ds-vector: " .  ($mem_end - $mem_start)  . PHP_EOL;
+	echo "time ds-vector: " .  ($time_end - $time_start) / $mega . PHP_EOL;
+	$time_start = microtime(true);
+
+	foreach($spl as $k => $v) {
+
+	}
+	$time_end = microtime(true);
+	echo "2time ds-vector: " .  ($time_end - $time_start) / $mega . PHP_EOL;
+}
+
 type_tests();
 spl_test();
 carray_test();
+ds_test();

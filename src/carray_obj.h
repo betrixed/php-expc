@@ -36,19 +36,51 @@ typedef struct _carray_obj_fntab {
 	char*	ename;
 	void (*init_elems)(p_carray_obj self, long from, long to);
 	void (*copy_elems)(p_carray_obj self, long offset,  p_carray_obj other, long begin, long end);
-	void (*get_zval)(p_carray_obj self, long offset, zval *zp); 
+	zval* (*get_zval)(p_carray_obj self, long offset, zval *zp); 
 	int (*set_zval)(p_carray_obj self, long offset, zval *zp); 
+	zend_object_iterator_funcs		zit_funcs;
 }
 carray_obj_fntab;
 
 
 typedef struct _carray_obj {
-	carray_obj_fntab* 	 fntab;
-	void* 				 elements;	
-	size_t				 size;
+	carray_obj_fntab* 	 		fntab;
+	void* 				 		elements;	
+	size_t				 		size;
 }
 carray_obj;
 
+typedef struct _phiz_carray_obj* pz_carray;
+
+typedef struct _phiz_carray_obj {
+	carray_obj           cobj;		// embedded polymorphic array
+	long 		  	     current; // 0 - indexed offset
+	//-- these ackward complicating function pointers 
+	//-- are here for the case when a derived class object implements an override method
+	zend_function       *fptr_offset_get;
+	zend_function       *fptr_offset_set;
+	zend_function       *fptr_offset_has;
+	zend_function       *fptr_offset_del;
+	zend_function       *fptr_count;
+	//-- standard object
+	zend_object          std;
+} phiz_carray_obj;
+
+typedef struct _carray_quickit {
+	zend_object_iterator intern;
+	zval                 result; // somehow to pass back the current value
+	zend_long            current;
+} carray_quickit;
+
+static inline  pz_carray phiz_carray_from_obj(zend_object *obj)
+{
+	return (pz_carray)((char*)(obj) - XtOffsetOf(phiz_carray_obj, std));
+}
+
+static inline  pz_carray Z_PHIZ_CARRAY_P(zval *zv)
+{
+	return (pz_carray)((char*) Z_OBJ_P((zv)) - XtOffsetOf(phiz_carray_obj, std));
+}
 // forward declarations
 void carray_etype_ctor(p_carray_obj this, int etype);
 void carray_copy_ctor(p_carray_obj this, p_carray_obj from);

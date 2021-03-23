@@ -73,6 +73,56 @@ void pca_resize(p_carray_obj this, long size) {
 }
 
 
+static void carray_quickit_dtor(zend_object_iterator *iter)
+{
+	zval_ptr_dtor(&iter->data);
+	zval_ptr_dtor( &((carray_quickit*)iter)->result );
+}
+
+static void carray_quickit_rewind(zend_object_iterator *iter)
+{
+	((carray_quickit*)iter)->current = 0;
+}
+
+static int carray_quickit_valid(zend_object_iterator *iter)
+{
+	carray_quickit     *iterator = (carray_quickit*)iter;
+	pz_carray object   = Z_PHIZ_CARRAY_P(&iter->data);
+
+	if (iterator->current >= 0 && iterator->current < object->cobj.size) {
+		return SUCCESS;
+	}
+
+	return FAILURE;
+}
+
+static zval *carray_quickit_get_current_data(zend_object_iterator *iter)
+{
+	carray_quickit     *iterator = (carray_quickit*)iter;
+	pz_carray object   = Z_PHIZ_CARRAY_P(&iter->data);
+
+	//zindex = iterator->current;
+	/* if (zindex < 0 || zindex >= object->cobj.size) {
+		zend_throw_exception(phiz_ce_RuntimeException, "Index invalid or out of range", 0);
+		return NULL;
+	}
+	*/
+	p_carray_obj pobj = &object->cobj;
+
+	return pobj->fntab->get_zval(pobj,iterator->current,&iterator->result);
+
+}
+
+static void carray_quickit_get_current_key(zend_object_iterator *iter, zval *key)
+{
+	ZVAL_LONG(key, ((carray_quickit*)iter)->current);
+}
+
+static void carray_quickit_move_forward(zend_object_iterator *iter)
+{
+	((carray_quickit*)iter)->current++;
+}
+
 
 // CAT_INT8
 #define PHIZ_CARRAY_ETYPE CAT_INT8

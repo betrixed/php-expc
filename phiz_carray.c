@@ -18,35 +18,9 @@
 #define phiz_ce_Aggregate     zend_ce_aggregate
 
 
-typedef struct _phiz_carray_obj* pz_carray;
-
-typedef struct _phiz_carray_obj {
-	carray_obj           cobj;		// embedded polymorphic array
-	long 		  	     current; // 0 - indexed offset
-	//-- these ackward complicating function pointers 
-	//-- are here for the case when a derived class object implements an override method
-	zend_function       *fptr_offset_get;
-	zend_function       *fptr_offset_set;
-	zend_function       *fptr_offset_has;
-	zend_function       *fptr_offset_del;
-	zend_function       *fptr_count;
-	//-- standard object
-	zend_object          std;
-} phiz_carray_obj;
-
-typedef struct _carray_quickit {
-	zend_object_iterator intern;
-	zval                 result; // somehow to pass back the current value
-	zend_long            current;
-} carray_quickit;
 
 
-static  pz_carray phiz_carray_from_obj(zend_object *obj)
-{
-	return (pz_carray)((char*)(obj) - XtOffsetOf(phiz_carray_obj, std));
-}
-
-#define Z_PHIZ_CARRAY_P(zv)  phiz_carray_from_obj(Z_OBJ_P((zv)))
+//#define Z_PHIZ_CARRAY_P(zv)  phiz_carray_from_obj(Z_OBJ_P((zv)))
 
 // structure for pointer to functions
 zend_object_handlers 	phiz_handler_CArray;
@@ -434,36 +408,10 @@ static zval *carray_obj_read_dimension_helper(pz_carray intern, zval *offset)
 	}
 }
 
-static int carray_obj_has_dimension_helper(pz_carray intern, zval *offset, int check_empty)
-{
-	zend_long index;
-	int retval;
-
-	if (Z_TYPE_P(offset) != IS_LONG) {
-		index = phiz_offset_convert_to_long(offset);
-	} else {
-		index = Z_LVAL_P(offset);
-	}
-
-	if (index < 0 || index >= intern->cobj.size) {
-		retval = 0;
-	} else {
-		// *EMPTY* values are not implemented
-		return  1;
-		/*if (check_empty) {
-			retval = zend_is_true(&intern->array.elements[index]);
-		} else {
-			retval = Z_TYPE(intern->array.elements[index]) != IS_NULL;
-		}
-		*/
-	}
-
-	return retval;
-}
-
 static int carray_obj_has_dimension(zend_object *object, zval *offset, int check_empty)
 {
 	pz_carray intern = phiz_carray_from_obj(object);
+	zend_long index;
 
 	if (intern->fptr_offset_has) {
 		zval rv;
@@ -477,13 +425,26 @@ static int carray_obj_has_dimension(zend_object *object, zval *offset, int check
 		return result;
 	}
 
-	return carray_obj_has_dimension_helper(intern, offset, check_empty);
+	if (Z_TYPE_P(offset) != IS_LONG) {
+		index = phiz_offset_convert_to_long(offset);
+	} else {
+		index = Z_LVAL_P(offset);
+	}
+
+	if (index < 0 || index >= intern->cobj.size) {
+		return 0;
+	} else {
+		// *EMPTY* values are not implemented
+		return  1;
+	}
 }
 
 static zval *carray_obj_read_dimension(
 	zend_object *object, zval *offset, int type, zval *rv)
 {
 	pz_carray intern = phiz_carray_from_obj(object);
+	zend_long index;
+	p_carray_obj pobj;
 
 	if (type == BP_VAR_IS && !carray_obj_has_dimension(object, offset, 0)) {
 		return &EG(uninitialized_zval);
@@ -505,7 +466,22 @@ static zval *carray_obj_read_dimension(
 		return &EG(uninitialized_zval);
 	}
 
-	return carray_obj_read_dimension_helper(intern, offset);
+	if (Z_TYPE_P(offset) != IS_LONG) {
+		index = phiz_offset_convert_to_long(offset);
+	} else {
+		index = Z_LVAL_P(offset);
+	}
+
+	
+	if (index < 0 || index >= intern->cobj.size) {
+		zend_throw_exception(phiz_ce_RuntimeException, "Index invalid or out of range", 0);
+		return NULL;
+	} else {
+		// reuse of zval* offset is only option here
+		pobj = &intern->cobj;
+		pobj->fntab->get_zval(pobj, index, offset);
+		return offset;
+	}
 }
 
 static void carray_obj_write_dimension_helper(pz_carray intern, zval *offset, zval *value)
@@ -625,72 +601,6 @@ PHP_METHOD(CArray, getIterator)
 
 
 
-
-static void carray_quickit_dtor(zend_object_iterator *iter)
-{
-	zval_ptr_dtor(&iter->data);
-	zval_ptr_dtor( &((carray_quickit*)iter)->result );
-}
-
-static void carray_quickit_rewind(zend_object_iterator *iter)
-{
-	((carray_quickit*)iter)->current = 0;
-}
-
-static int carray_quickit_valid(zend_object_iterator *iter)
-{
-	carray_quickit     *iterator = (carray_quickit*)iter;
-	pz_carray object   = Z_PHIZ_CARRAY_P(&iter->data);
-
-	if (iterator->current >= 0 && iterator->current < object->cobj.size) {
-		return SUCCESS;
-	}
-
-	return FAILURE;
-}
-
-static zval *carray_quickit_get_current_data(zend_object_iterator *iter)
-{
-	long   zindex;
-	zval*  data;
-	zval*  result;
-
-	carray_quickit     *iterator = (carray_quickit*)iter;
-	pz_carray object   = Z_PHIZ_CARRAY_P(&iter->data);
-
-	
-	zindex = iterator->current;
-	if (zindex < 0 || zindex >= object->cobj.size) {
-		zend_throw_exception(phiz_ce_RuntimeException, "Index invalid or out of range", 0);
-		return NULL;
-	}
-	p_carray_obj pobj = &object->cobj;
-	result = &iterator->result;
-	pobj->fntab->get_zval(pobj,zindex,result);
-	return result;
-}
-
-static void carray_quickit_get_current_key(zend_object_iterator *iter, zval *key)
-{
-	ZVAL_LONG(key, ((carray_quickit*)iter)->current);
-}
-
-static void carray_quickit_move_forward(zend_object_iterator *iter)
-{
-	((carray_quickit*)iter)->current++;
-}
-
-static const zend_object_iterator_funcs carray_quickit_funcs = {
-	carray_quickit_dtor,
-	carray_quickit_valid,
-	carray_quickit_get_current_data,
-	carray_quickit_get_current_key,
-	carray_quickit_move_forward,
-	carray_quickit_rewind,
-	NULL,
-	NULL, /* get_gc */
-};
-
 zend_object_iterator *carray_get_iterator(
 	zend_class_entry *ce, zval *object, int by_ref)
 {
@@ -706,7 +616,10 @@ zend_object_iterator *carray_get_iterator(
 	zend_iterator_init((zend_object_iterator*)iterator);
 	ZVAL_UNDEF(&iterator->result);
 	ZVAL_OBJ_COPY(&iterator->intern.data, Z_OBJ_P(object));
-	iterator->intern.funcs = &carray_quickit_funcs;
+	pz_carray intern = Z_PHIZ_CARRAY_P(object);
+	p_carray_obj pobj = &intern->cobj;
+
+	iterator->intern.funcs = &pobj->fntab->zit_funcs;
 
 	return &iterator->intern;
 }

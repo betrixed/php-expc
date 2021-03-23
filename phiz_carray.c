@@ -139,7 +139,7 @@ PHP_METHOD(CArray, isSignedType)
 
 	intern = Z_PHIZ_CARRAY_P(ZEND_THIS);
 
-	if ((intern->cobj.fntab->etype) & 0x01 == 0) {
+	if ( ((intern->cobj.fntab->etype) & 0x01) == 0) {
 		RETURN_TRUE;
 	}
 	RETURN_FALSE;
@@ -511,6 +511,8 @@ static zval *carray_obj_read_dimension(
 static void carray_obj_write_dimension_helper(pz_carray intern, zval *offset, zval *value)
 {
 	zend_long index;
+	p_carray_obj pobj;
+	int  set_error;
 
 	if (!offset) {
 		/* '$array[] = value' syntax is not supported */
@@ -528,7 +530,14 @@ static void carray_obj_write_dimension_helper(pz_carray intern, zval *offset, zv
 		zend_throw_exception(phiz_ce_RuntimeException, "Index invalid or out of range", 0);
 		return;
 	} else {
-		intern->cobj.fntab->set_zval(&intern->cobj, index, value);
+		pobj = &intern->cobj;
+
+		set_error = pobj->fntab->set_zval(pobj, index, value);
+
+		if (set_error != CATE_OK) {
+			printf(" SET ERROR = %d", set_error);
+			zend_throw_exception(phiz_ce_RuntimeException, "Element value outside range", 0);
+		}
 	}
 }
 

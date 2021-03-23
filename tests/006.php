@@ -13,30 +13,30 @@ $ftypes = [CArray::CA_REAL32, CArray::CA_REAL64];
 foreach($etypes as $t => $e) {
 	
 	$z = new CArray($e, 10);
-	$z = new CArray($e, 100);
-	echo "EType = " . $z->getTypeName() . " = " . $z->getType() . " : " . $z->getTypeSize() . PHP_EOL;
+	echo "EType = " . $z->getTypeName() . " = " . $z->getType() . PHP_EOL;
+	echo ($z->isSignedType() ? "signed" : "unsigned") . $z->getTypeSize()*8 .  PHP_EOL;
 	foreach($z as $k => $v) {
-		$newvalue = 10 * ($k << $z->getTypeSize());
+		$newvalue = 20 * ($k << $z->getTypeSize());
 		$z[$k] = $newvalue;
-		echo  "value = " . $newvalue  . "  fetched " . $z[$k]  . PHP_EOL;
+		//echo  "value = " . $newvalue  . "  fetched " . $z[$k]  . PHP_EOL;
 		//echo  "value = " . $newvalue  . "  fetched " . $z[$k]  . PHP_EOL;
 	}
-	echo PHP_EOL;
+	//echo PHP_EOL;
 
 }
 
 foreach($ftypes as $t => $e) {
 	
 	$z = new CArray($e, 10);
-	$z = new CArray($e, 100);
-	echo "FType = " . $e . " = " . $z->getTypeName() . " : " . $z->getTypeSize() . PHP_EOL;
+	echo "EType = " . $z->getTypeName() . " = " . $z->getType() . PHP_EOL;
+	echo ($z->isSignedType() ? "signed" : "unsigned") . $z->getTypeSize()*8 .  PHP_EOL;
 	foreach($z as $k => $v) {
-		$newvalue = ($k << $z->getTypeSize()) ** M_PI;
+		$newvalue = (($k*10) << $z->getTypeSize()) ** M_PI;
 		$z[$k] = $newvalue;
-		echo "value = " . $newvalue  . " fetched " . $z[$k] . PHP_EOL;
+		//echo "value = " . $newvalue  . " fetched " . $z[$k] . PHP_EOL;
 		//echo "value = " . $newvalue  . " fetched " . $z[$k] . PHP_EOL;
 	}
-	echo PHP_EOL;
+	//echo PHP_EOL;
 
 }
 
@@ -91,5 +91,6 @@ function carray_test() {
 	$time_end = microtime(true);
 	echo "2time carray: " .  ($time_end - $time_start) / $mega . PHP_EOL;
 }
+type_tests();
 spl_test();
 carray_test();

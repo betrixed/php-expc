@@ -49,16 +49,6 @@ static long capacity_mark[kmax_cap_index] =
 	4, 8, 16, 32, 64, 128, 256, 512, 829, 1342, // 10
 	2172, 3515, 5688, 9204, 14893, 24098, 38992, 63091, 102084, 165175, // 10
 };
-// size = 3, lo = 0, hi = 21, 
-// mid = 10 , value = 2048 , hi = 10
-// mid = 5 , value = 64 , hi = 5
-// mid = 2 , value = 8 , hi = 2
-// mid = 1 , value = 4 , hi = 1
-// mid = 0 , value = 2 , lo = 1
-
-// hi = lo = 1
-// mid = 1 , value = 4 , hi = 1
-// mid = 0 , value = 2 , lo = 0
 	int mid;
 	int lo = 0;
 	int hi = kmax_cap_index; // maximum index

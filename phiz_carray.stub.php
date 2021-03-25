@@ -1,7 +1,7 @@
 <?php
 /** @generate-function-entries */
 class CArray implements  IteratorAggregate, ArrayAccess, Countable {
-	public function __construct(int $size, int $cptype) {}
+	public function __construct(int $typeEnum, int $size = 0) {}
 
     /** @return int */
     public function count() {}

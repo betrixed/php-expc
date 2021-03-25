@@ -1,9 +1,9 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 39fb3de03bec0ef9397c4545ff5b3e88298f3d4e */
+ * Stub hash: c3d818ad67701c84cbe35b21ab488bc414c2efe3 */
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_class_CArray___construct, 0, 0, 2)
-	ZEND_ARG_TYPE_INFO(0, size, IS_LONG, 0)
-	ZEND_ARG_TYPE_INFO(0, cptype, IS_LONG, 0)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_CArray___construct, 0, 0, 1)
+	ZEND_ARG_TYPE_INFO(0, typeEnum, IS_LONG, 0)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, size, IS_LONG, 0, "0")
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_CArray_count, 0, 0, 0)

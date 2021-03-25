@@ -10,7 +10,7 @@
 #include "phiz_carray_arginfo.h"
 #include "phiz_carray.h"
 #include "src/carray_obj.h"
-
+#include "php_phiz.h"
 #include "Zend/zend_interfaces.h"
 #define phiz_ce_Countable     zend_ce_countable
 #define phiz_ce_ArrayAccess	  zend_ce_arrayaccess
@@ -378,18 +378,7 @@ static zend_object *phiz_carray_clone(zend_object *old_object)
 }
 
 
-PHPAPI void phiz_register_std_class(zend_class_entry ** ppce, char * class_name, void * obj_ctor, const zend_function_entry * function_list)
-{
-	zend_class_entry ce;
 
-	INIT_CLASS_ENTRY_EX(ce, class_name, strlen(class_name), function_list);
-	*ppce = zend_register_internal_class(&ce);
-
-	/* entries changed by initialize */
-	if (obj_ctor) {
-		(*ppce)->create_object = obj_ctor;
-	}
-}
 
 // direct steal from spl_offset_convert_to_long
 PHPAPI zend_long phiz_offset_convert_to_long(zval *offset) /* {{{ */
@@ -666,7 +655,8 @@ zend_object_iterator *carray_get_iterator(
 
 PHP_MINIT_FUNCTION(phiz_carray)
 {
-	phiz_register_std_class(&phiz_ce_CArray, "CArray", phiz_carray_new, class_CArray_methods);
+	phiz_register_std_class(&phiz_ce_CArray, "CArray", 
+		phiz_carray_new, class_CArray_methods);
 	memcpy(&phiz_handler_CArray, &std_object_handlers, sizeof(zend_object_handlers));
 
 	phiz_handler_CArray.offset = XtOffsetOf(phiz_carray_obj, std);

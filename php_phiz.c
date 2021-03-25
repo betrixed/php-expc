@@ -20,6 +20,21 @@ ZEND_DECLARE_MODULE_GLOBALS(phiz)
 static PHP_GINIT_FUNCTION(phiz);
 static PHP_GSHUTDOWN_FUNCTION(phiz);
 
+PHPAPI void 
+phiz_register_std_class(zend_class_entry ** ppce, 
+	char * class_name, void * obj_ctor, 
+	const zend_function_entry* function_list)
+{
+	zend_class_entry ce;
+
+	INIT_CLASS_ENTRY_EX(ce, class_name, strlen(class_name), function_list);
+	*ppce = zend_register_internal_class(&ce);
+
+	/* entries changed by initialize */
+	if (obj_ctor) {
+		(*ppce)->create_object = obj_ctor;
+	}
+}
 
 /* {{{ PHP_MINIT_FUNCTION */
 PHP_MINIT_FUNCTION(phiz)

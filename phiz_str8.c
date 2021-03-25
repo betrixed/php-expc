@@ -6,7 +6,7 @@
 #include "phiz_str8.h"
 #include "phiz_str8_arginfo.h"
 #include "Zend/zend_interfaces.h"
-#include "src/ucode8.h"
+#include "src/str8_obj.h"
 
 #define phiz_ce_Aggregate     zend_ce_aggregate
 
@@ -17,12 +17,8 @@ typedef struct _phiz_str8_obj {
 
 typedef struct _str8_quickit {
 	zend_object_iterator intern;
-	char*				 str;
-	long            	 slen;
 	zval                 result; // holder zval for current value
-	long 		  		 current; // 0 - indexed offset
-	long          		 next;	   // 0 - indexed offset
-	long          		 ucode; // holds char32_t value
+	str8_obj             str8;
 } str8_quickit;
 
 
@@ -54,44 +50,23 @@ static void str8_quickit_move_forward(zend_object_iterator *iter)
 	str8_quickit*	   iterator = (str8_quickit*)iter;
 	phiz_str8_obj*     this   = Z_PHIZ_STR8_P(&iter->data);
 
-	long next = iterator->next;
-	long slen = iterator->slen - next;
+	phiz_str8_move((p_str8) &iterator->str8);
 
-	if (slen > 0) {
-		char32_t value = INVALID_CHAR;
-		long units = ucode8Fore(iterator->str + next, slen, &value);
-		
-		if ((units > 0) && (value != INVALID_CHAR)) {
-			iterator->current = next;
-			iterator->next = next + units;
-			iterator->ucode = value;
-			
-			return;
-		}
-
-	}
-	iterator->current = iterator->next;
-	iterator->ucode = INVALID_CHAR;
-	//(carray_quickit*)iter)->current++;
 }
 
 static void str8_quickit_rewind(zend_object_iterator *iter)
 {
 	str8_quickit*	   iterator = (str8_quickit*)iter;
-	iterator->next = 0;
-	iterator->current = -1;
-	iterator->ucode = INVALID_CHAR;
-	str8_quickit_move_forward(iter);
+    phiz_str8_rewind(&iterator->str8);
+	phiz_str8_move(&iterator->str8);
 }
 
 static int str8_quickit_valid(zend_object_iterator *iter)
 {
 	str8_quickit*	   iterator = (str8_quickit*)iter;
 
-	if ((iterator->current >= 0) && (iterator->current < iterator->slen) 
-		&& (iterator->ucode != INVALID_CHAR)) {
+	if (phiz_str8_valid(&iterator->str8)) {
 		return SUCCESS;
-
 	}
 	return FAILURE;
 }
@@ -107,14 +82,14 @@ static zval *str8_quickit_get_current_data(zend_object_iterator *iter)
 	}
 	*/
 	zval* result = &iterator->result;
-	ZVAL_LONG(result, iterator->ucode);
+	ZVAL_LONG(result, iterator->str8.ucode);
 	return result;
 }
 
 static void str8_quickit_get_current_key(zend_object_iterator *iter, zval *key)
 {
 	str8_quickit*	   iterator = (str8_quickit*)iter;
-	ZVAL_LONG(key, 	   iterator->current);
+	ZVAL_LONG(key, 	   iterator->str8.current);
 }
 
 
@@ -148,14 +123,8 @@ zend_object_iterator *str8_get_iterator(
 	phiz_str8_obj*     this   = Z_PHIZ_STR8_P(object);
 
 	iterator->intern.funcs = &str8_itftab;
-	iterator->ucode = INVALID_CHAR;
-	iterator->next = 0;
-	iterator->current = -1;
 	zend_string* s = Z_STR(this->target);
-	iterator->str = ZSTR_VAL(s);
-	iterator->slen = ZSTR_LEN(s);
-
-	
+	phiz_str8_init(&iterator->str8, ZSTR_VAL(s), ZSTR_LEN(s));
 	return (zend_object_iterator*)iterator;
 }
 

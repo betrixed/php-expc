@@ -2,7 +2,7 @@
 #define PHIZ_EXCEPTIONS_H
 
 #include "php.h"
-
+#include "php_phiz.h"
 
 extern PHPAPI zend_class_entry *phiz_ce_RuntimeException;
 

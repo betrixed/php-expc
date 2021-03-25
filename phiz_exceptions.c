@@ -10,7 +10,7 @@
 
 #include "phiz_exceptions.h"
 #include "phiz_carray.h"
-
+#include "php_phiz.h"
 
 PHPAPI zend_class_entry *phiz_ce_RuntimeException;
 

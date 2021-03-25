@@ -11,13 +11,6 @@
 #include "carray_obj.h"
 
 
-
-static void carray_default_ctor(p_carray_obj array)
-{
-	array->size = 0;
-	array->elements = NULL;
-}
-
 void pca_alloc(p_carray_obj this, long size) {
 	if (size > 0) {
 		this->size = 0; /* reset size in case ecalloc() fails */
@@ -40,36 +33,129 @@ void pca_free(p_carray_obj this)
 	if (!pca_is_empty(this)) {
 		efree(this->elements);
 		this->elements = NULL;
+		this->capacity = 0;
 		this->size = 0;
 	}
 }
 
-void pca_resize(p_carray_obj this, long size) {
+// pre-calculated.  *2 up to 524288, *1.61803 after,
+// up to  75.5e9  . After that
+
+long next_cap_mark(long size) {
+
+#define  kmax_cap_index 20
+static long capacity_mark[kmax_cap_index] = 
+{
+	4, 8, 16, 32, 64, 128, 256, 512, 829, 1342, // 10
+	2172, 3515, 5688, 9204, 14893, 24098, 38992, 63091, 102084, 165175, // 10
+};
+// size = 3, lo = 0, hi = 21, 
+// mid = 10 , value = 2048 , hi = 10
+// mid = 5 , value = 64 , hi = 5
+// mid = 2 , value = 8 , hi = 2
+// mid = 1 , value = 4 , hi = 1
+// mid = 0 , value = 2 , lo = 1
+
+// hi = lo = 1
+// mid = 1 , value = 4 , hi = 1
+// mid = 0 , value = 2 , lo = 0
+	int mid;
+	int lo = 0;
+	int hi = kmax_cap_index; // maximum index
+	long value;
+
+
+	while (hi > lo) {
+		mid = (lo + hi)/2; // maximum index
+		value = capacity_mark[mid];
+		if (value < size) {
+			// index too low!
+			lo = mid + 1;
+		}
+		else if (value == size) {
+			return value;
+		}
+		else { // value > size
+			hi = mid;
+		}
+	}
+	if (lo < kmax_cap_index) {
+		value = capacity_mark[lo];
+	}
+	else {
+		// go for bust
+		value = (long) floor(1.5*size);
+	}
+	
+	//printf("size %d, value %d lo %d hi %d", size, value, lo, hi);
+
+	return value; // a should be next larger
+}
+
+// Make allocations and deallocations go here
+// Can set exact capacity, not below current size
+void pca_reserve(p_carray_obj this, long newCapacity) {
+	int esize;
+
+	if (newCapacity < this->size) {
+		newCapacity = this->size;
+	}
+	if (newCapacity == 0 && this->capacity > 0) {
+		if (this->elements) {
+			efree(this->elements);
+			this->elements = NULL;
+			this->capacity = 0;
+			return;
+		}
+	}
+	esize = this->fntab->esize;
+	if (this->capacity == 0) {
+		this->elements = safe_emalloc(newCapacity, esize, 0);
+	}
+	else {
+		this->elements = safe_erealloc(this->elements, newCapacity, esize, 0);
+	}
+	this->capacity = newCapacity;
+}
+
+int pca_pushback(p_carray_obj this, zval* value) {
+	// initialize with value
+	long offset = this->size;
+	pca_resize(this,offset+1,0);
+	return this->fntab->set_zval(this,offset,value);
+}
+
+void pca_resize(p_carray_obj this, long size, int ctdt) {
+	carray_obj_fntab* fntab;
 
 	if (this->size == size) {
 		return;
 	}
-
-	if (this->size == 0) {
-		pca_alloc(this,size);
-		this->fntab->init_elems(this,0,size);
+	fntab = this->fntab;
+	if (size > this->size) {
+		if (size > this->capacity) {
+			pca_reserve(this, next_cap_mark(size));
+		}
+		if (ctdt) {
+			fntab->init_elems(this,this->size,size);
+		}
+		this->size = size;
 		return;
 	}
 	if (size == 0) {
-		efree(this->elements);
-		this->elements = NULL;
-		this->size = 0;
+		if (this->size > 0 && fntab->dtor_elems) {
+			fntab->dtor_elems(this,0,this->size);
+			this->size = 0;
+		}
+		pca_reserve(this,0);
 		return;
 	}
-	carray_obj_fntab* fntab = this->fntab;
-	if (size > this->size) {
-		this->elements = safe_erealloc(this->elements, size, fntab->esize, 0);
-		fntab->init_elems(this,this->size,size);
-		this->size = size;
-		return;
+	// 0 < size < this->size
+	if (fntab->dtor_elems) {
+		fntab->dtor_elems(this,size,this->size);
 	}	
-	this->elements = erealloc(this->elements, size * fntab->esize);
 	this->size = size;
+	return;
 }
 
 
@@ -263,6 +349,7 @@ void carray_etype_ctor(p_carray_obj this, int etype) {
 			break;
 	}
 	this->elements = NULL;
+	this->capacity = 0;
 	this->size = 0;
 }
 

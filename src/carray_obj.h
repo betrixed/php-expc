@@ -35,6 +35,7 @@ typedef struct _carray_obj_fntab {
 	size_t  esize;
 	char*	ename;
 	void (*init_elems)(p_carray_obj self, long from, long to);
+	void (*dtor_elems)(p_carray_obj self, long from, long to);
 	void (*copy_elems)(p_carray_obj self, long offset,  p_carray_obj other, long begin, long end);
 	zval* (*get_zval)(p_carray_obj self, long offset, zval *zp); 
 	int (*set_zval)(p_carray_obj self, long offset, zval *zp); 
@@ -47,6 +48,7 @@ typedef struct _carray_obj {
 	carray_obj_fntab* 	 		fntab;
 	void* 				 		elements;	
 	size_t				 		size;
+	size_t						capacity;
 }
 carray_obj;
 
@@ -54,7 +56,6 @@ typedef struct _phiz_carray_obj* pz_carray;
 
 typedef struct _phiz_carray_obj {
 	carray_obj           cobj;		// embedded polymorphic array
-	long 		  	     current; // 0 - indexed offset
 	//-- these ackward complicating function pointers 
 	//-- are here for the case when a derived class object implements an override method
 	zend_function       *fptr_offset_get;
@@ -86,7 +87,9 @@ void carray_etype_ctor(p_carray_obj this, int etype);
 void carray_copy_ctor(p_carray_obj this, p_carray_obj from);
 
 // works on all carray_obj
-void pca_resize(p_carray_obj this, long size);
+int  pca_pushback(p_carray_obj, zval* value);
+void pca_resize(p_carray_obj this, long size, int ctdt);
+void pca_reserve(p_carray_obj this, long size);
 void pca_alloc(p_carray_obj this, long size);
 void pca_free(p_carray_obj this);
 char* pca_get_type_str(int etype);

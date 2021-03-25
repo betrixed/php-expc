@@ -50,12 +50,11 @@ PHP_METHOD(CArray, __construct)
 		pca_alloc(&intern->cobj, size);
 		intern->cobj.fntab->init_elems(&intern->cobj, 0, size);
 	}
-	intern->current = 0;
 	// no return value
 }
 
 
-PHP_METHOD(CArray, setSize)
+PHP_METHOD(CArray, resize)
 {
 	zend_long 		size;
 	pz_carray 		intern;
@@ -66,8 +65,23 @@ PHP_METHOD(CArray, setSize)
 
 	intern = Z_PHIZ_CARRAY_P(ZEND_THIS);
 
-	pca_resize(&intern->cobj, size);
-	intern->current = 0;
+	pca_resize(&intern->cobj, size, 1);
+	RETURN_TRUE;
+
+}
+
+PHP_METHOD(CArray, reserve)
+{
+	zend_long 		size;
+	pz_carray 		intern;
+
+	ZEND_PARSE_PARAMETERS_START(1, 1)
+		Z_PARAM_LONG(size)
+	ZEND_PARSE_PARAMETERS_END();
+
+	intern = Z_PHIZ_CARRAY_P(ZEND_THIS);
+
+	pca_reserve(&intern->cobj, size);
 	RETURN_TRUE;
 
 }
@@ -92,6 +106,20 @@ PHP_METHOD(CArray, getTypeSize)
 	RETURN_LONG(intern->cobj.fntab->esize);
 }
 
+
+PHP_METHOD(CArray, getTypeEnum)
+{
+	pz_carray 		intern;
+
+
+	ZEND_PARSE_PARAMETERS_NONE();
+
+	intern = Z_PHIZ_CARRAY_P(ZEND_THIS);
+
+	RETURN_LONG(intern->cobj.fntab->etype);
+
+}
+
 PHP_METHOD(CArray, getTypeName)
 {
 	pz_carray 		intern;
@@ -104,7 +132,9 @@ PHP_METHOD(CArray, getTypeName)
 	ZVAL_STRING(return_value, intern->cobj.fntab->ename);
 
 }
-PHP_METHOD(CArray, isSignedType)
+
+
+PHP_METHOD(CArray, signedType)
 {
 	pz_carray 		intern;
 
@@ -119,7 +149,7 @@ PHP_METHOD(CArray, isSignedType)
 	RETURN_FALSE;
 }
 
-PHP_METHOD(CArray, getSize)
+PHP_METHOD(CArray, size)
 {
 	pz_carray 		intern;
 	ZEND_PARSE_PARAMETERS_NONE();
@@ -127,6 +157,16 @@ PHP_METHOD(CArray, getSize)
 	intern = Z_PHIZ_CARRAY_P(ZEND_THIS);
 
 	RETURN_LONG(intern->cobj.size);
+}
+
+PHP_METHOD(CArray, capacity)
+{
+	pz_carray 		intern;
+	ZEND_PARSE_PARAMETERS_NONE();
+
+	intern = Z_PHIZ_CARRAY_P(ZEND_THIS);
+
+	RETURN_LONG(intern->cobj.capacity);
 }
 
 PHP_METHOD(CArray, count)
@@ -488,32 +528,32 @@ static void carray_obj_write_dimension_helper(pz_carray intern, zval *offset, zv
 {
 	zend_long index;
 	p_carray_obj pobj;
-	int  set_error;
+	int  set_error = CATE_TYPE;
 
 	if (!offset) {
 		/* '$array[] = value' syntax is not supported */
-		zend_throw_exception(phiz_ce_RuntimeException, "Index invalid or out of range", 0);
-		return;
-	}
 
-	if (Z_TYPE_P(offset) != IS_LONG) {
-		index = phiz_offset_convert_to_long(offset);
-	} else {
-		index = Z_LVAL_P(offset);
-	}
-
-	if (index < 0 || index >= intern->cobj.size) {
-		zend_throw_exception(phiz_ce_RuntimeException, "Index invalid or out of range", 0);
-		return;
-	} else {
 		pobj = &intern->cobj;
-
-		set_error = pobj->fntab->set_zval(pobj, index, value);
-
-		if (set_error != CATE_OK) {
-			printf(" SET ERROR = %d", set_error);
-			zend_throw_exception(phiz_ce_RuntimeException, "Element value outside range", 0);
+		set_error = pca_pushback(pobj, value);
+	}
+	else {
+		if (Z_TYPE_P(offset) != IS_LONG) {
+			index = phiz_offset_convert_to_long(offset);
+		} else {
+			index = Z_LVAL_P(offset);
 		}
+
+		if (index < 0 || index >= intern->cobj.size) {
+			zend_throw_exception(phiz_ce_RuntimeException, "Index invalid or out of range", 0);
+			return;
+		} else {
+			pobj = &intern->cobj;
+			set_error = pobj->fntab->set_zval(pobj, index, value);
+		}
+	}
+	if (set_error != CATE_OK) {
+		//printf(" SET ERROR = %d", set_error);
+		zend_throw_exception(phiz_ce_RuntimeException, "Element value outside range", 0);
 	}
 }
 

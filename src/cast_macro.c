@@ -37,6 +37,11 @@ static void pca_init_name (p_carray_obj this, long from, long to)
 	}
 }
 
+#ifndef PHIX_CAST_DTOR
+#define pca_dtor_name NULL
+#endif
+
+
 #define pca_copy_name CAT2(pca_copyelems_,PHIZ_CAST_NAME)
 
 static void pca_copy_name
@@ -108,6 +113,7 @@ static carray_obj_fntab CAT2(PHIZ_CAST_NAME, _fntab) = {
 	sizeof(PHIZ_CAST_TYPE),
 	pca_type_name,
 	pca_init_name,
+	pca_dtor_name,
 	pca_copy_name,
 	pca_getzval_name,
 	pca_setzval_name,

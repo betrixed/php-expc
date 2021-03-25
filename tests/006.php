@@ -13,8 +13,8 @@ $ftypes = [CArray::CA_REAL32, CArray::CA_REAL64];
 foreach($etypes as $t => $e) {
 	
 	$z = new CArray($e, 10);
-	echo "EType = " . $z->getTypeName() . " = " . $z->getType() . PHP_EOL;
-	echo ($z->isSignedType() ? "signed" : "unsigned") . $z->getTypeSize()*8 .  PHP_EOL;
+	echo "EType = " . $z->getTypeName() . " = " . $z->getTypeEnum() . PHP_EOL;
+	echo ($z->signedType() ? "signed" : "unsigned") . $z->getTypeSize()*8 .  PHP_EOL;
 	foreach($z as $k => $v) {
 		$newvalue = 20 * ($k << $z->getTypeSize());
 		$z[$k] = $newvalue;
@@ -28,8 +28,8 @@ foreach($etypes as $t => $e) {
 foreach($ftypes as $t => $e) {
 	
 	$z = new CArray($e, 10);
-	echo "EType = " . $z->getTypeName() . " = " . $z->getType() . PHP_EOL;
-	echo ($z->isSignedType() ? "signed" : "unsigned") . $z->getTypeSize()*8 .  PHP_EOL;
+	echo "EType = " . $z->getTypeName() . " = " . $z->getTypeEnum() . PHP_EOL;
+	echo ($z->signedType() ? "signed" : "unsigned") . $z->getTypeSize()*8 .  PHP_EOL;
 	foreach($z as $k => $v) {
 		$newvalue = (($k*10) << $z->getTypeSize()) ** M_PI;
 		$z[$k] = $newvalue;
@@ -49,8 +49,8 @@ function spl_test() {
 
 	$mem_start = memory_get_usage();
 	$time_start = microtime(true);
-	$spl = new SplFixedArray(100000);
-	for($i = 0; $i < 100000; $i++) {
+	$spl = new SplFixedArray(500000);
+	for($i = 0; $i < 500000; $i++) {
 		$spl[$i] = $i;
 	}
 	$time_end = microtime(true);
@@ -73,10 +73,12 @@ function carray_test() {
 	$mem_start = 0;
 	$mem_end = $mem_start;
 	$mem_start = memory_get_usage();
+	
+	$spl = new CArray(CArray::CA_UINT32,0);
 	$time_start = microtime(true);
-	$spl = new CArray(CArray::CA_UINT32, 100000);
-	for($i = 0; $i < 100000; $i++) {
-		$spl[$i] = $i;
+	for($i = 0; $i < 500000; $i++) {
+		$spl[] = $i;
+		
 	}
 	$time_end = microtime(true);
 	$mem_end = memory_get_usage();
@@ -100,10 +102,10 @@ function ds_test() {
 	$mem_start = memory_get_usage();
 	$time_start = microtime(true);
 	$spl = new \DS\Vector();
-	$spl->allocate(100000);
 	echo "Vector capacity " . $spl->capacity() . PHP_EOL;
-	for($i = 0; $i < 100000; $i++) {
-		$spl->push($i);
+	$old_cap = 0;
+	for($i = 0; $i < 500000; $i++) {
+		$spl[] = $i;
 	}
 	$time_end = microtime(true);
 	$mem_end = memory_get_usage();
@@ -121,5 +123,5 @@ function ds_test() {
 
 type_tests();
 spl_test();
-carray_test();
 ds_test();
+carray_test();

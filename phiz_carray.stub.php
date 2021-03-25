@@ -10,7 +10,7 @@ class CArray implements  IteratorAggregate, ArrayAccess, Countable {
     public function toArray() {}
 
     /** @return int */
-    public  function getType() {}
+    public  function getTypeEnum() {}
 
     /** @return string */
     public function getTypeName() {}
@@ -18,15 +18,20 @@ class CArray implements  IteratorAggregate, ArrayAccess, Countable {
     /** @return int */
     public function getTypeSize() {}
 
-	    /** @return int */
-    
-    public function getSize() {}
+    /** @return void */
+    public function reserve(int $size);
+
+    /** @return int */
+    public function size() {}
+
+     /** @return int */
+    public function capacity() {}
 
     /** @return bool */
-    public function setSize(int $size) {}
+    public function resize(int $size) {}
 
     /** @return bool */
-    public function isSignedType() {}
+    public function signedType() {}
 
     /**
      * @param int $index

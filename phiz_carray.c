@@ -65,7 +65,7 @@ PHP_METHOD(CArray, resize)
 
 	intern = Z_PHIZ_CARRAY_P(ZEND_THIS);
 
-	pca_resize(&intern->cobj, size, 1);
+	pca_resize(&intern->cobj, size);
 	RETURN_TRUE;
 
 }
@@ -508,8 +508,7 @@ static zval *carray_obj_read_dimension(
 	} else {
 		// reuse of zval* offset is only option here
 		pobj = &intern->cobj;
-		pobj->fntab->get_zval(pobj, index, offset);
-		return offset;
+		return pobj->fntab->get_zval(pobj, index, offset);
 	}
 }
 
@@ -542,7 +541,8 @@ static void carray_obj_write_dimension_helper(pz_carray intern, zval *offset, zv
 	}
 	if (set_error != CATE_OK) {
 		//printf(" SET ERROR = %d", set_error);
-		zend_throw_exception(phiz_ce_RuntimeException, "Element value outside range", 0);
+		zend_throw_exception_ex(phiz_ce_RuntimeException, 0,
+			"Value outside storage range for %s %Z", pobj->fntab->ename, value);
 	}
 }
 
@@ -582,7 +582,11 @@ static void carray_obj_unset_dimension_helper(pz_carray intern, zval *offset)
 		zend_throw_exception(phiz_ce_RuntimeException, "Index invalid or out of range", 0);
 		return;
 	} else {
-		/* NO EMPTY value token to set yet*/
+		p_carray_obj pobj = &intern->cobj;
+		carray_obj_fntab* fntab = pobj->fntab;
+		if (fntab->ctdt) {
+			fntab->dtor_elems(pobj,index,index+1);
+		}
 	}
 }
 
@@ -677,9 +681,10 @@ PHP_MINIT_FUNCTION(phiz_carray)
 	REGISTER_PHIZ_CLASS_CONST_LONG("CA_INT32", (zend_long)CAT_INT32);
 	REGISTER_PHIZ_CLASS_CONST_LONG("CA_UINT32", (zend_long)CAT_UINT32);
 	REGISTER_PHIZ_CLASS_CONST_LONG("CA_INT64", (zend_long)CAT_INT64);
-	REGISTER_PHIZ_CLASS_CONST_LONG("CA_UINT64", (zend_long)CAT_UINT64);
+	//REGISTER_PHIZ_CLASS_CONST_LONG("CA_UINT64", (zend_long)CAT_UINT64);
 	REGISTER_PHIZ_CLASS_CONST_LONG("CA_REAL32", (zend_long)CAT_REAL32);
 	REGISTER_PHIZ_CLASS_CONST_LONG("CA_REAL64", (zend_long)CAT_REAL64);
+	REGISTER_PHIZ_CLASS_CONST_LONG("CA_MIXED", (zend_long)CAT_MIXED);
 
 	REGISTER_PHIZ_IMPLEMENTS(CArray, Aggregate);
 	REGISTER_PHIZ_IMPLEMENTS(CArray, ArrayAccess);

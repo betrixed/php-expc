@@ -38,8 +38,8 @@ void pca_free(p_carray_obj this)
 	}
 }
 
-// pre-calculated.  *2 up to 524288, *1.61803 after,
-// up to  75.5e9  . After that
+// pre-calculated.  *2 up to 512, *1.61803 after,
+// up to  165175  . After that, *1.5
 
 long next_cap_mark(long size) {
 
@@ -73,8 +73,8 @@ static long capacity_mark[kmax_cap_index] =
 		value = capacity_mark[lo];
 	}
 	else {
-		// go for bust
-		value = (long) floor(1.5*size);
+		// Go for bust, assume grow by push
+		value = (long) floor(1.5*(size-1));
 	}
 	
 	//printf("size %d, value %d lo %d hi %d", size, value, lo, hi);
@@ -111,11 +111,11 @@ void pca_reserve(p_carray_obj this, long newCapacity) {
 int pca_pushback(p_carray_obj this, zval* value) {
 	// initialize with value
 	long offset = this->size;
-	pca_resize(this,offset+1,0);
+	pca_resize(this,offset+1);
 	return this->fntab->set_zval(this,offset,value);
 }
 
-void pca_resize(p_carray_obj this, long size, int ctdt) {
+void pca_resize(p_carray_obj this, long size) {
 	carray_obj_fntab* fntab;
 
 	if (this->size == size) {
@@ -126,14 +126,14 @@ void pca_resize(p_carray_obj this, long size, int ctdt) {
 		if (size > this->capacity) {
 			pca_reserve(this, next_cap_mark(size));
 		}
-		if (ctdt) {
+		if (fntab->ctdt) {
 			fntab->init_elems(this,this->size,size);
 		}
 		this->size = size;
 		return;
 	}
 	if (size == 0) {
-		if (this->size > 0 && fntab->dtor_elems) {
+		if (this->size > 0 && fntab->ctdt) {
 			fntab->dtor_elems(this,0,this->size);
 			this->size = 0;
 		}
@@ -141,7 +141,7 @@ void pca_resize(p_carray_obj this, long size, int ctdt) {
 		return;
 	}
 	// 0 < size < this->size
-	if (fntab->dtor_elems) {
+	if (fntab->ctdt) {
 		fntab->dtor_elems(this,size,this->size);
 	}	
 	this->size = size;
@@ -206,6 +206,7 @@ static void carray_quickit_move_forward(zend_object_iterator *iter)
 #define PHIZ_CAST_NAME int8
 #define PHIZ_ZVAL_TYPE LONG
 #define PHIZ_ZVAL_CAST_TYPE Z_LVAL_P
+#define PHIZ_ZVAL_CAST_TEMP long
 #define PHIZ_CAST_MIN CHAR_MIN
 #define PHIZ_CAST_MAX CHAR_MAX
 #include "cast_macro.c"
@@ -216,6 +217,7 @@ static void carray_quickit_move_forward(zend_object_iterator *iter)
 #define PHIZ_CAST_NAME uint8
 #define PHIZ_ZVAL_TYPE LONG
 #define PHIZ_ZVAL_CAST_TYPE Z_LVAL_P
+#define PHIZ_ZVAL_CAST_TEMP long
 #define PHIZ_CAST_MIN 0
 #define PHIZ_CAST_MAX UINT8_MAX
 #include "cast_macro.c"
@@ -226,6 +228,7 @@ static void carray_quickit_move_forward(zend_object_iterator *iter)
 #define PHIZ_CAST_NAME  int16
 #define PHIZ_ZVAL_TYPE LONG
 #define PHIZ_ZVAL_CAST_TYPE Z_LVAL_P
+#define PHIZ_ZVAL_CAST_TEMP long
 #define PHIZ_CAST_MIN INT16_MIN
 #define PHIZ_CAST_MAX INT16_MAX
 #include "cast_macro.c"
@@ -237,6 +240,7 @@ static void carray_quickit_move_forward(zend_object_iterator *iter)
 #define PHIZ_CAST_NAME  uint16
 #define PHIZ_ZVAL_TYPE LONG
 #define PHIZ_ZVAL_CAST_TYPE Z_LVAL_P
+#define PHIZ_ZVAL_CAST_TEMP long
 #define PHIZ_CAST_MIN 0
 #define PHIZ_CAST_MAX UINT16_MAX
 #include "cast_macro.c"
@@ -249,6 +253,7 @@ static void carray_quickit_move_forward(zend_object_iterator *iter)
 #define PHIZ_CAST_NAME int32
 #define PHIZ_ZVAL_TYPE LONG
 #define PHIZ_ZVAL_CAST_TYPE Z_LVAL_P
+#define PHIZ_ZVAL_CAST_TEMP long
 #define PHIZ_CAST_MIN INT32_MIN
 #define PHIZ_CAST_MAX INT32_MAX
 #include "cast_macro.c"
@@ -259,6 +264,7 @@ static void carray_quickit_move_forward(zend_object_iterator *iter)
 #define PHIZ_CAST_NAME uint32
 #define PHIZ_ZVAL_TYPE LONG
 #define PHIZ_ZVAL_CAST_TYPE Z_LVAL_P
+#define PHIZ_ZVAL_CAST_TEMP long
 #define PHIZ_CAST_MIN 0
 #define PHIZ_CAST_MAX UINT32_MAX
 #include "cast_macro.c"
@@ -269,19 +275,8 @@ static void carray_quickit_move_forward(zend_object_iterator *iter)
 #define PHIZ_CAST_NAME int64
 #define PHIZ_ZVAL_TYPE LONG
 #define PHIZ_ZVAL_CAST_TYPE Z_LVAL_P
-#define PHIZ_CAST_MIN INT64_MIN
-#define PHIZ_CAST_MAX INT64_MAX
 #include "cast_macro.c"
 
-// CAT_UINT64
-#define PHIZ_CARRAY_ETYPE CAT_UINT64
-#define PHIZ_CAST_TYPE uint64_t
-#define PHIZ_CAST_NAME uint64
-#define PHIZ_ZVAL_TYPE LONG
-#define PHIZ_ZVAL_CAST_TYPE Z_LVAL_P
-#define PHIZ_CAST_MIN 0
-#define PHIZ_CAST_MAX UINT64_MAX
-#include "cast_macro.c"
 
 // CAT_REAL32
 #define PHIZ_CARRAY_ETYPE CAT_REAL32
@@ -289,6 +284,7 @@ static void carray_quickit_move_forward(zend_object_iterator *iter)
 #define PHIZ_CAST_NAME float
 #define PHIZ_ZVAL_TYPE DOUBLE
 #define PHIZ_ZVAL_CAST_TYPE Z_DVAL_P
+#define PHIZ_ZVAL_CAST_TEMP double
 #define PHIZ_CAST_MIN -FLT_MAX
 #define PHIZ_CAST_MAX FLT_MAX
 #include "cast_macro.c"
@@ -300,10 +296,88 @@ static void carray_quickit_move_forward(zend_object_iterator *iter)
 #define PHIZ_CAST_NAME double
 #define PHIZ_ZVAL_TYPE DOUBLE
 #define PHIZ_ZVAL_CAST_TYPE Z_DVAL_P
-#define PHIZ_CAST_MIN -DBL_MAX
-#define PHIZ_CAST_MAX DBL_MAX
 #include "cast_macro.c"
 
+// The zval array functions are special
+static void pca_init_zval (p_carray_obj this, long from, long to) 
+{
+	zval* begin = (zval*) this->elements + from;
+	zval* end = (zval*) this->elements + to;
+	while (begin != end) {
+		 ZVAL_NULL(begin);
+		 begin++;
+	}
+}
+static void pca_dtor_zval (p_carray_obj this, long from, long to) 
+{
+	zval* begin = (zval*) this->elements + from;
+	zval* end = (zval*) this->elements + to;
+	while (begin != end) {
+		 zval_dtor(begin);
+		 ZVAL_NULL(begin);
+		 begin++;
+	}
+}
+
+static void pca_copy_zval
+ (p_carray_obj this, zend_long offset, p_carray_obj other, zend_long begin, zend_long end)
+{
+	zval *to = (zval*) this->elements + offset;
+	zval *bgp = (zval*) other->elements + begin;
+	zval *ep = (zval*) other->elements + end;
+
+	while (bgp != ep) {
+		ZVAL_COPY(to++,bgp++);
+	}
+}
+
+static zval* pca_get_zval
+( p_carray_obj this, zend_long offset,  zval* retval)
+{
+	return (zval*) this->elements + offset;
+}
+
+#define pca_setzval_name   CAT2(pca_setzval_,PHIZ_CAST_NAME)
+
+static int pca_set_zval
+( p_carray_obj this, zend_long offset,  zval* setval)
+{
+	zval* val = (zval*) this->elements + offset;
+	zval_ptr_dtor(val);
+	ZVAL_COPY_DEREF(val, setval);
+	return CATE_OK;
+}
+
+
+static zval* pcait_getdata_zval
+(zend_object_iterator *iter)
+{
+	carray_quickit  *iterator = (carray_quickit*)iter;
+	pz_carray object   = Z_PHIZ_CARRAY_P(&iter->data);
+	p_carray_obj this = &object->cobj;
+	return (zval*) this->elements + iterator->current;
+}
+
+static carray_obj_fntab mixed_fntab = {
+	CAT_MIXED,
+	1,
+	sizeof(zval),
+	"mixed",
+	pca_init_zval,
+	pca_dtor_zval,
+	pca_copy_zval,
+	pca_get_zval,
+	pca_set_zval,
+	{
+		carray_quickit_dtor,
+		carray_quickit_valid,
+		pcait_getdata_zval,
+		carray_quickit_get_current_key,
+		carray_quickit_move_forward,
+		carray_quickit_rewind
+		/*, NULL, NULL */
+	}
+};
 
 void carray_etype_ctor(p_carray_obj this, int etype) {
 	switch(etype) {
@@ -328,14 +402,17 @@ void carray_etype_ctor(p_carray_obj this, int etype) {
 		case CAT_INT64: 
 			this->fntab = &int64_fntab;
 			break;
-		case CAT_UINT64: 
+		/*case CAT_UINT64: 
 			this->fntab = &uint64_fntab;
-			break;
+			break;*/
 		case CAT_REAL32: 
 			this->fntab = &float_fntab;
 			break;
 		case CAT_REAL64: 
 			this->fntab = &double_fntab;
+			break;
+		case CAT_MIXED:
+			this->fntab = &mixed_fntab;
 			break;
 	}
 	this->elements = NULL;

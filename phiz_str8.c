@@ -86,10 +86,12 @@ static zval *str8_quickit_get_current_data(zend_object_iterator *iter)
 	return result;
 }
 
+// return next rather than current. Offset to end of the utf8-code character.
+// The first character offset is always 0. Store next as offset for next loop.
 static void str8_quickit_get_current_key(zend_object_iterator *iter, zval *key)
 {
 	str8_quickit*	   iterator = (str8_quickit*)iter;
-	ZVAL_LONG(key, 	   iterator->str8.current);
+	ZVAL_LONG(key, 	   iterator->str8.next);
 }
 
 

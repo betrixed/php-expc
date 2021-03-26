@@ -8,16 +8,6 @@
 #endif
 
 
-#ifndef PHIZ_CAST_MIN
-#error PHIZ_CAST_MIN not defined
-#endif
-
-
-#ifndef PHIZ_CAST_MAX
-#error PHIZ_CAST_MAX not defined
-#endif
-
-
 #define CAT(a,b) a##b
 #define CAT2(a,b) CAT(a,b)
 #define CAT_STR(x) #x
@@ -74,12 +64,16 @@ static int pca_setzval_name
 	if (Z_TYPE_P(setval) != CAT2(IS_,PHIZ_ZVAL_TYPE)){
 		return CATE_TYPE;
 	}
-	t_ctype val = PHIZ_ZVAL_CAST_TYPE(setval);
+	#ifdef PHIZ_ZVAL_CAST_TEMP
+		PHIZ_ZVAL_CAST_TEMP val = PHIZ_ZVAL_CAST_TYPE(setval);
 
-	if (val < PHIZ_CAST_MIN || val > PHIZ_CAST_MAX) {
-		return  CATE_RANGE;
-	}
-	*( (t_ctype*) this->elements + offset) = val;
+		if (val < (PHIZ_ZVAL_CAST_TEMP)PHIZ_CAST_MIN || val > (PHIZ_ZVAL_CAST_TEMP)PHIZ_CAST_MAX) {
+			return  CATE_RANGE;
+		}
+		*( (t_ctype*) this->elements + offset) = val;
+	#else
+		*( (t_ctype*) this->elements + offset) = PHIZ_ZVAL_CAST_TYPE(setval);
+	#endif
 	return CATE_OK;
 }
 
@@ -110,6 +104,7 @@ static zval* pcait_getdata_name
 
 static carray_obj_fntab CAT2(PHIZ_CAST_NAME, _fntab) = {
 	PHIZ_CARRAY_ETYPE,
+	0,
 	sizeof(PHIZ_CAST_TYPE),
 	pca_type_name,
 	pca_init_name,
@@ -139,5 +134,6 @@ static carray_obj_fntab CAT2(PHIZ_CAST_NAME, _fntab) = {
 #undef PHIZ_CAST_NAME
 #undef PHIZ_ZVAL_TYPE
 #undef PHIZ_ZVAL_CAST_TYPE
+#undef PHIZ_ZVAL_CAST_TEMP
 #undef PHIZ_CAST_MIN
 #undef PHIZ_CAST_MAX

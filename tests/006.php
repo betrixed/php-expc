@@ -1,29 +1,74 @@
 <?php
 
+function mixed_tests() {
+
+	$a = new CArray(CArray::CA_MIXED);
+	echo "New" . PHP_EOL;
+	$a[] = "Hello zval ";
+	$a[] = "World";
+	foreach($a as $key => $value) {
+		echo $value;
+	}
+	echo PHP_EOL;
+	echo $a[0] . $a[1] . PHP_EOL;
+	unset($a[0]);
+	echo $a[0] . $a[1] . PHP_EOL;
+
+
+}
 function type_tests() 
 {
+echo "PHP_INTMAX = " . PHP_INT_MAX . PHP_EOL;
+
 $etypes = [CArray::CA_INT8, CArray::CA_UINT8, 
 			CArray::CA_INT16, CArray::CA_UINT16,
 			CArray::CA_INT32, CArray::CA_UINT32,
-						CArray::CA_INT64, CArray::CA_UINT64
+			CArray::CA_INT64
 		  ];
 
-$ftypes = [CArray::CA_REAL32, CArray::CA_REAL64];
 
-foreach($etypes as $t => $e) {
-	
-	$z = new CArray($e, 10);
-	echo "EType = " . $z->getTypeName() . " = " . $z->getTypeEnum() . PHP_EOL;
-	echo ($z->signedType() ? "signed" : "unsigned") . $z->getTypeSize()*8 .  PHP_EOL;
-	foreach($z as $k => $v) {
-		$newvalue = 20 * ($k << $z->getTypeSize());
-		$z[$k] = $newvalue;
-		//echo  "value = " . $newvalue  . "  fetched " . $z[$k]  . PHP_EOL;
-		//echo  "value = " . $newvalue  . "  fetched " . $z[$k]  . PHP_EOL;
+$limits = [
+				CArray::CA_INT8 => [-1*intval(ceil(2**7)), intval(ceil(2**7-1))],
+				CArray::CA_UINT8 => [0, intval(ceil(2**8-1))],
+				CArray::CA_INT16 => [-1 * intval(ceil(2**15)), intval(ceil(2**15-1))],
+				CArray::CA_UINT16 => [0, intval(ceil(2**16-1)) ],
+				CArray::CA_INT32 => [ -1*intval(ceil(2**31)), intval(ceil(2**31-1)) ],
+				CArray::CA_UINT32 => [ 0, intval(ceil(2**32-1)) ],
+				CArray::CA_INT64 => [ -PHP_INT_MAX-1, PHP_INT_MAX ]
+		  ];
+	$ftypes = [CArray::CA_REAL32, CArray::CA_REAL64];
+
+		foreach($etypes as $t => $e) {
+			$z = new CArray($e);
+				$etype = $z->getTypeEnum();
+				$ename = $z->getTypeName();
+
+				echo "EType = " . $ename . " Enum = " . $etype . PHP_EOL;
+				echo ($z->signedType() ? "signed" : "unsigned") . $z->getTypeSize()*8 .  " " ;
+			
+				for($i = 0; $i < 2; $i++) {
+				try {
+				
+				$eset = $limits[$etype];
+				$z[] = $eset[$i];
+
+				
+
+
+			//echo PHP_EOL;
+				}
+
+		catch (\Exception $ex) {
+			echo $ex->getMessage() . PHP_EOL;
+		}
+
+		}
+		foreach($z as $val) {
+			echo $val . " ";
+		}
+		echo PHP_EOL;
 	}
-	//echo PHP_EOL;
-
-}
+	
 
 foreach($ftypes as $t => $e) {
 	
@@ -121,6 +166,7 @@ function ds_test() {
 	echo "2time ds-vector: " .  ($time_end - $time_start) / $mega . PHP_EOL;
 }
 
+mixed_tests();
 type_tests();
 spl_test();
 ds_test();

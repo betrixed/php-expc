@@ -119,6 +119,9 @@ ZEND_FUNCTION(route_extract_params)
 	char *pat = NULL;
 	size_t pat_len = 0;
 	HashTable*    matches;
+	HashTable*    route;
+	HashTable*    list2;
+
 	smart_str	  route_str = {0};
 	smart_str	  regex_str = {0};
 	smart_str	  variable = {0};
@@ -143,9 +146,10 @@ ZEND_FUNCTION(route_extract_params)
 	ZEND_PARSE_PARAMETERS_END();
     
     // HashTable expect maxiumum size
-	matches = zend_new_array(4);
-	ZVAL_ARR(return_value, matches); 
+	list2 = zend_new_array(2);
+	ZVAL_ARR(return_value, list2); 
 
+	matches = zend_new_array(4);
 
 	for (cursor = 0; cursor < pat_len; cursor++)
 	{
@@ -281,6 +285,12 @@ ZEND_FUNCTION(route_extract_params)
 			prevCh = ch;
 		}
 	}
+	smart_str_0(&route_str);
+
+	add_next_index_str(return_value, route_str.s);
+	ZVAL_ARR(&tmp, matches);
+	add_next_index_zval(return_value, &tmp);
+
 	smart_str_free(&route_str);
 	smart_str_free(&regex_str);
 	smart_str_free(&variable);

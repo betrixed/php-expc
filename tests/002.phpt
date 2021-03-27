@@ -8,8 +8,7 @@ if (!extension_loaded('phiz')) {
 ?>
 --FILE--
 <?php
-$ret = test1();
-
+$ret = route_extract_params("/series/{id}");
 var_dump($ret);
 ?>
 --EXPECT--

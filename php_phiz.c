@@ -291,7 +291,7 @@ ZEND_FUNCTION(route_extract_params)
 
 	ZVAL_ARR(&tmp, matches);
 	add_next_index_zval(return_value, &tmp);
-	Z_DELREF_P(return_value);
+	//Z_DELREF_P(return_value);
 	//zval_ptr_dtor(&tmp);
 
 	//smart_str_free(&route_str); // don't free

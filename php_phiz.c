@@ -119,7 +119,6 @@ ZEND_FUNCTION(route_extract_params)
 	char *pat = NULL;
 	size_t pat_len = 0;
 	HashTable*    matches;
-	HashTable*    route;
 	HashTable*    list2;
 
 	smart_str	  route_str = {0};
@@ -288,6 +287,8 @@ ZEND_FUNCTION(route_extract_params)
 	smart_str_0(&route_str);
 
 	add_next_index_str(return_value, route_str.s);
+
+
 	ZVAL_ARR(&tmp, matches);
 	add_next_index_zval(return_value, &tmp);
 

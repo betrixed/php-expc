@@ -300,3 +300,129 @@ ZEND_FUNCTION(route_extract_params)
 }
 /* }}}*/
 
+/** Only does one character seperator */
+void phiz_uncamel(zval* return_value, const zend_string *src, const zend_string *sep)
+{
+	smart_str uncamel_str = {0};
+	const char *marker;
+	const char* psep;
+	int sep_len = 0;
+	unsigned int i;
+	int src_len;
+	char ch, sepch;
+
+	ZVAL_UNDEF(return_value);
+	if (sep!=NULL) {
+		psep = ZSTR_VAL(sep);
+		sep_len = ZSTR_LEN(sep);
+	}
+	if (sep_len == 0) {
+		sepch = '_';
+	}
+	else {
+		sepch = *psep;
+	}
+
+	marker = ZSTR_VAL(src);
+	src_len = ZSTR_LEN(src);
+
+	for (i = 0; i < src_len; i++) {
+		ch = *marker;
+		if (ch == '\0') {
+			break;
+		}
+		if (ch >= 'A' && ch <= 'Z') {
+			if (i > 0) {
+				smart_str_appendc(&uncamel_str, sepch);
+			}
+			// lower case
+			smart_str_appendc(&uncamel_str, ch + 32);
+		} else {
+			smart_str_appendc(&uncamel_str, ch);
+		}
+		marker++;
+	}
+	smart_str_0(&uncamel_str);
+
+	if (uncamel_str.s) {
+		RETURN_STR(uncamel_str.s);
+	} else {
+		RETURN_EMPTY_STRING();
+	}
+}
+/**
+ * Convert dash/underscored texts returning camelized
+ * (an optional delimiter can be specified as character-mask as for ltrim)
+ */
+void phiz_camel(zval* return_value, const zend_string *src, const zend_string *sep)
+{
+	smart_str camel_str = {0};
+	const char* marker;
+	const char* psep;
+	int   sep_len = 0;
+	int i, len, found = 0;
+	char ch;
+
+	ZVAL_UNDEF(return_value);
+	marker = ZSTR_VAL(src);
+	len    = ZSTR_LEN(src);
+
+
+	if (sep != NULL) {
+		psep = ZSTR_VAL(sep);
+		sep_len = ZSTR_LEN(sep);
+	}
+	if (sep_len == 0) {
+		psep = "_-";
+		sep_len = 2;
+	}
+
+	for (i = 0; i < len; i++) {
+		ch = marker[i];
+
+		if (memchr(psep, ch, sep_len)) {
+			found = 1;
+			continue;
+		}
+		if (found == 1) {
+			smart_str_appendc(&camel_str, toupper(ch));
+			found = 0;
+		} else {
+			smart_str_appendc(&camel_str, tolower(ch));
+		}
+	}
+
+	smart_str_0(&camel_str);
+
+	if (camel_str.s) {
+		RETURN_STR(camel_str.s);
+	} else {
+		RETURN_EMPTY_STRING();
+	}
+}
+
+ZEND_FUNCTION(str_uncamel) {
+	zend_string* src = NULL;
+	zend_string* sep = NULL;
+
+	ZEND_PARSE_PARAMETERS_START(1, 2)
+		Z_PARAM_STR(src)
+		Z_PARAM_OPTIONAL
+		Z_PARAM_STR(sep)
+	ZEND_PARSE_PARAMETERS_END();
+
+	phiz_uncamel(return_value, src, sep );
+}
+
+ZEND_FUNCTION(str_camel) {
+	zend_string* src = NULL;
+	zend_string* sep = NULL;
+
+	ZEND_PARSE_PARAMETERS_START(1, 2)
+		Z_PARAM_STR(src)
+		Z_PARAM_OPTIONAL
+		Z_PARAM_STR(sep)
+	ZEND_PARSE_PARAMETERS_END();
+
+	phiz_camel(return_value, src, sep );
+}

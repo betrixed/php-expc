@@ -7,6 +7,7 @@
 #include "phiz_str8_arginfo.h"
 #include "Zend/zend_interfaces.h"
 #include "src/str8_obj.h"
+#include <zend_smart_str.h>
 
 #define phiz_ce_Aggregate     zend_ce_aggregate
 
@@ -171,6 +172,7 @@ PHP_METHOD(Str8, __toString)
 	
 	ZVAL_COPY_VALUE(return_value, &intern->target);
 }
+
 
 // not implementing inherited (yet)
 static zend_object *phiz_str8_new_ex(zend_class_entry *class_type,

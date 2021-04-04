@@ -360,7 +360,7 @@ void phiz_camel(zval* return_value, const zend_string *src, const zend_string *s
 	const char* marker;
 	const char* psep;
 	int   sep_len = 0;
-	int i, len, found = 0;
+	int i, len, found = 1;
 	char ch;
 
 	ZVAL_UNDEF(return_value);

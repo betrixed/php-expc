@@ -1,12 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 60bb20cf16d5475dabbfc55c736c6425bdd89eac */
-
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_str_camel, 0, 1, IS_STRING, 0)
-	ZEND_ARG_TYPE_INFO(0, s, IS_STRING, 0)
-	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, seperate, IS_STRING, 0, "\"_\"")
-ZEND_END_ARG_INFO()
-
-#define arginfo_str_uncamel arginfo_str_camel
+ * Stub hash: 1c189fb046d70c11dc0d418e32644ccee7191227 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Str8___construct, 0, 0, 1)
 	ZEND_ARG_TYPE_INFO(0, s, IS_STRING, 0)
@@ -19,18 +12,9 @@ ZEND_BEGIN_ARG_WITH_RETURN_OBJ_INFO_EX(arginfo_class_Str8_getIterator, 0, 0, Ite
 ZEND_END_ARG_INFO()
 
 
-ZEND_FUNCTION(str_camel);
-ZEND_FUNCTION(str_uncamel);
 ZEND_METHOD(Str8, __construct);
 ZEND_METHOD(Str8, __toString);
 ZEND_METHOD(Str8, getIterator);
-
-
-static const zend_function_entry ext_functions[] = {
-	ZEND_FE(str_camel, arginfo_str_camel)
-	ZEND_FE(str_uncamel, arginfo_str_uncamel)
-	ZEND_FE_END
-};
 
 
 static const zend_function_entry class_Str8_methods[] = {

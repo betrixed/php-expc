@@ -8,7 +8,7 @@ if (!extension_loaded('phiz')) {
 ?>
 --FILE--
 <?php
-echo 'The extension "phiz" is available';
+echo 'The extension "phiz" is available' . PHP_EOL;
 ?>
 --EXPECT--
 The extension "phiz" is available

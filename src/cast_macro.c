@@ -18,28 +18,30 @@
 
 #define pca_init_name CAT2(pca_initelems_, PHIZ_CAST_NAME)
 
-static void pca_init_name (p_carray_obj this, long from, long to) 
+static void pca_init_name (garray* self, long from, long to) 
 {
-	t_ctype* begin = (t_ctype*) this->elements + from;
-	t_ctype* end = (t_ctype*) this->elements + to;
+	t_ctype* begin = (t_ctype*) self->head.elements + from;
+	t_ctype* end = (t_ctype*) self->head.elements + to;
 	while (begin != end) {
 		*begin++ = 0;
 	}
 }
 
-#ifndef PHIX_CAST_DTOR
+#ifndef PHIZ_CAST_DTOR
 #define pca_dtor_name NULL
 #endif
 
 
 #define pca_copy_name CAT2(pca_copyelems_,PHIZ_CAST_NAME)
 
+// Note begin and end are both offsets, begin < end
 static void pca_copy_name
- (p_carray_obj this, zend_long offset, p_carray_obj other, zend_long begin, zend_long end)
+ (garray* this, zend_long offset, 
+  garray* other, zend_long begin, zend_long end)
 {
-	t_ctype *to = (t_ctype*) this->elements + offset;
-	t_ctype *bgp = (t_ctype*) other->elements + begin;
-	t_ctype *ep = (t_ctype*) other->elements + end;
+	t_ctype *to = (t_ctype*) (this->head.elements) + offset;
+	t_ctype *bgp = (t_ctype*) (other->head.elements) + begin;
+	t_ctype *ep = (t_ctype*) (other->head.elements) + end;
 
 	while (bgp != ep) {
 		*to++ = *bgp++;
@@ -52,7 +54,7 @@ static void pca_copy_name
 static zval* pca_getzval_name
 ( p_carray_obj this, zend_long offset,  zval* retval)
 {
-	ret_phiz_zval(retval,*((t_ctype*) this->elements + offset));
+	ret_phiz_zval(retval,*((t_ctype*) (this->gen.head.elements) + offset));
 	return retval;
 }
 
@@ -70,9 +72,9 @@ static int pca_setzval_name
 		if (val < (PHIZ_ZVAL_CAST_TEMP)PHIZ_CAST_MIN || val > (PHIZ_ZVAL_CAST_TEMP)PHIZ_CAST_MAX) {
 			return  CATE_RANGE;
 		}
-		*( (t_ctype*) this->elements + offset) = val;
+		*( (t_ctype*) (this->gen.head.elements) + offset) = val;
 	#else
-		*( (t_ctype*) this->elements + offset) = PHIZ_ZVAL_CAST_TYPE(setval);
+		*( (t_ctype*) (this->gen.head.elements) + offset) = PHIZ_ZVAL_CAST_TYPE(setval);
 	#endif
 	return CATE_OK;
 }
@@ -98,18 +100,21 @@ static zval* pcait_getdata_name
 	result = &iterator->result;
 	p_carray_obj this = &object->cobj;
 
-	ret_phiz_zval(result,*((t_ctype*) this->elements + iterator->current));
+	ret_phiz_zval(result,*((t_ctype*) this->gen.head.elements + iterator->current));
 	return result;
 }
 
-static carray_obj_fntab CAT2(PHIZ_CAST_NAME, _fntab) = {
-	PHIZ_CARRAY_ETYPE,
-	0,
+static gen_array_fntab CAT2(PHIZ_CAST_NAME, _fntab) = {
 	sizeof(PHIZ_CAST_TYPE),
 	pca_type_name,
+	0,
+	PHIZ_CARRAY_ETYPE,
 	pca_init_name,
 	pca_dtor_name,
 	pca_copy_name,
+};
+
+static zarray_fntab CAT2(PHIZ_CAST_NAME, _zntab) = {	
 	pca_getzval_name,
 	pca_setzval_name,
 	{

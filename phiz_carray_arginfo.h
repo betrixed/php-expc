@@ -1,85 +1,125 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: c3d818ad67701c84cbe35b21ab488bc414c2efe3 */
+ * Stub hash: 0f334d7260d77603ab25417f7a8afe96e8a0a6ee */
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_class_CArray___construct, 0, 0, 1)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Carray___construct, 0, 0, 1)
 	ZEND_ARG_TYPE_INFO(0, typeEnum, IS_LONG, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, size, IS_LONG, 0, "0")
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_class_CArray_count, 0, 0, 0)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Carray_count, 0, 0, 0)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_CArray_toArray arginfo_class_CArray_count
+#define arginfo_class_Carray_toArray arginfo_class_Carray_count
 
-#define arginfo_class_CArray_getTypeEnum arginfo_class_CArray_count
+#define arginfo_class_Carray_getTypeEnum arginfo_class_Carray_count
 
-#define arginfo_class_CArray_getTypeName arginfo_class_CArray_count
+#define arginfo_class_Carray_getTypeName arginfo_class_Carray_count
 
-#define arginfo_class_CArray_getTypeSize arginfo_class_CArray_count
+#define arginfo_class_Carray_getTypeSize arginfo_class_Carray_count
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_class_CArray_reserve, 0, 0, 1)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Carray_reserve, 0, 0, 1)
 	ZEND_ARG_TYPE_INFO(0, size, IS_LONG, 0)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_CArray_size arginfo_class_CArray_count
+#define arginfo_class_Carray_size arginfo_class_Carray_count
 
-#define arginfo_class_CArray_capacity arginfo_class_CArray_count
+#define arginfo_class_Carray_capacity arginfo_class_Carray_count
 
-#define arginfo_class_CArray_resize arginfo_class_CArray_reserve
+#define arginfo_class_Carray_resize arginfo_class_Carray_reserve
 
-#define arginfo_class_CArray_signedType arginfo_class_CArray_count
+#define arginfo_class_Carray_signedType arginfo_class_Carray_count
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_class_CArray_offsetExists, 0, 0, 1)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Carray_offsetExists, 0, 0, 1)
 	ZEND_ARG_INFO(0, index)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_CArray_offsetGet arginfo_class_CArray_offsetExists
+#define arginfo_class_Carray_offsetGet arginfo_class_Carray_offsetExists
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_class_CArray_offsetSet, 0, 0, 2)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Carray_offsetSet, 0, 0, 2)
 	ZEND_ARG_INFO(0, index)
 	ZEND_ARG_TYPE_INFO(0, value, IS_MIXED, 0)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_CArray_offsetUnset arginfo_class_CArray_offsetExists
+#define arginfo_class_Carray_offsetUnset arginfo_class_Carray_offsetExists
 
-ZEND_BEGIN_ARG_WITH_RETURN_OBJ_INFO_EX(arginfo_class_CArray_getIterator, 0, 0, Iterator, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_INFO_EX(arginfo_class_Carray_getIterator, 0, 0, Iterator, 0)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_INFO_EX(arginfo_class_Carray_sub, 0, 2, CArray, 0)
+	ZEND_ARG_TYPE_INFO(0, start, IS_LONG, 0)
+	ZEND_ARG_TYPE_INFO(0, len, IS_LONG, 0)
+ZEND_END_ARG_INFO()
 
-ZEND_METHOD(CArray, __construct);
-ZEND_METHOD(CArray, count);
-ZEND_METHOD(CArray, toArray);
-ZEND_METHOD(CArray, getTypeEnum);
-ZEND_METHOD(CArray, getTypeName);
-ZEND_METHOD(CArray, getTypeSize);
-ZEND_METHOD(CArray, reserve);
-ZEND_METHOD(CArray, size);
-ZEND_METHOD(CArray, capacity);
-ZEND_METHOD(CArray, resize);
-ZEND_METHOD(CArray, signedType);
-ZEND_METHOD(CArray, offsetExists);
-ZEND_METHOD(CArray, offsetGet);
-ZEND_METHOD(CArray, offsetSet);
-ZEND_METHOD(CArray, offsetUnset);
-ZEND_METHOD(CArray, getIterator);
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Csu8___construct, 0, 0, 1)
+	ZEND_ARG_TYPE_INFO(0, s, IS_STRING, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Csu8___toString, 0, 0, IS_STRING, 0)
+ZEND_END_ARG_INFO()
+
+#define arginfo_class_Csu8_getIterator arginfo_class_Carray_getIterator
+
+#define arginfo_class_Csu32___construct arginfo_class_Csu8___construct
+
+#define arginfo_class_Csu32___toString arginfo_class_Csu8___toString
 
 
-static const zend_function_entry class_CArray_methods[] = {
-	ZEND_ME(CArray, __construct, arginfo_class_CArray___construct, ZEND_ACC_PUBLIC)
-	ZEND_ME(CArray, count, arginfo_class_CArray_count, ZEND_ACC_PUBLIC)
-	ZEND_ME(CArray, toArray, arginfo_class_CArray_toArray, ZEND_ACC_PUBLIC)
-	ZEND_ME(CArray, getTypeEnum, arginfo_class_CArray_getTypeEnum, ZEND_ACC_PUBLIC)
-	ZEND_ME(CArray, getTypeName, arginfo_class_CArray_getTypeName, ZEND_ACC_PUBLIC)
-	ZEND_ME(CArray, getTypeSize, arginfo_class_CArray_getTypeSize, ZEND_ACC_PUBLIC)
-	ZEND_ME(CArray, reserve, arginfo_class_CArray_reserve, ZEND_ACC_PUBLIC)
-	ZEND_ME(CArray, size, arginfo_class_CArray_size, ZEND_ACC_PUBLIC)
-	ZEND_ME(CArray, capacity, arginfo_class_CArray_capacity, ZEND_ACC_PUBLIC)
-	ZEND_ME(CArray, resize, arginfo_class_CArray_resize, ZEND_ACC_PUBLIC)
-	ZEND_ME(CArray, signedType, arginfo_class_CArray_signedType, ZEND_ACC_PUBLIC)
-	ZEND_ME(CArray, offsetExists, arginfo_class_CArray_offsetExists, ZEND_ACC_PUBLIC)
-	ZEND_ME(CArray, offsetGet, arginfo_class_CArray_offsetGet, ZEND_ACC_PUBLIC)
-	ZEND_ME(CArray, offsetSet, arginfo_class_CArray_offsetSet, ZEND_ACC_PUBLIC)
-	ZEND_ME(CArray, offsetUnset, arginfo_class_CArray_offsetUnset, ZEND_ACC_PUBLIC)
-	ZEND_ME(CArray, getIterator, arginfo_class_CArray_getIterator, ZEND_ACC_PUBLIC)
+ZEND_METHOD(Carray, __construct);
+ZEND_METHOD(Carray, count);
+ZEND_METHOD(Carray, toArray);
+ZEND_METHOD(Carray, getTypeEnum);
+ZEND_METHOD(Carray, getTypeName);
+ZEND_METHOD(Carray, getTypeSize);
+ZEND_METHOD(Carray, reserve);
+ZEND_METHOD(Carray, size);
+ZEND_METHOD(Carray, capacity);
+ZEND_METHOD(Carray, resize);
+ZEND_METHOD(Carray, signedType);
+ZEND_METHOD(Carray, offsetExists);
+ZEND_METHOD(Carray, offsetGet);
+ZEND_METHOD(Carray, offsetSet);
+ZEND_METHOD(Carray, offsetUnset);
+ZEND_METHOD(Carray, getIterator);
+ZEND_METHOD(Carray, sub);
+ZEND_METHOD(Csu8, __construct);
+ZEND_METHOD(Csu8, __toString);
+ZEND_METHOD(Csu8, getIterator);
+ZEND_METHOD(Csu32, __construct);
+ZEND_METHOD(Csu32, __toString);
+
+
+static const zend_function_entry class_Carray_methods[] = {
+	ZEND_ME(Carray, __construct, arginfo_class_Carray___construct, ZEND_ACC_PUBLIC)
+	ZEND_ME(Carray, count, arginfo_class_Carray_count, ZEND_ACC_PUBLIC)
+	ZEND_ME(Carray, toArray, arginfo_class_Carray_toArray, ZEND_ACC_PUBLIC)
+	ZEND_ME(Carray, getTypeEnum, arginfo_class_Carray_getTypeEnum, ZEND_ACC_PUBLIC)
+	ZEND_ME(Carray, getTypeName, arginfo_class_Carray_getTypeName, ZEND_ACC_PUBLIC)
+	ZEND_ME(Carray, getTypeSize, arginfo_class_Carray_getTypeSize, ZEND_ACC_PUBLIC)
+	ZEND_ME(Carray, reserve, arginfo_class_Carray_reserve, ZEND_ACC_PUBLIC)
+	ZEND_ME(Carray, size, arginfo_class_Carray_size, ZEND_ACC_PUBLIC)
+	ZEND_ME(Carray, capacity, arginfo_class_Carray_capacity, ZEND_ACC_PUBLIC)
+	ZEND_ME(Carray, resize, arginfo_class_Carray_resize, ZEND_ACC_PUBLIC)
+	ZEND_ME(Carray, signedType, arginfo_class_Carray_signedType, ZEND_ACC_PUBLIC)
+	ZEND_ME(Carray, offsetExists, arginfo_class_Carray_offsetExists, ZEND_ACC_PUBLIC)
+	ZEND_ME(Carray, offsetGet, arginfo_class_Carray_offsetGet, ZEND_ACC_PUBLIC)
+	ZEND_ME(Carray, offsetSet, arginfo_class_Carray_offsetSet, ZEND_ACC_PUBLIC)
+	ZEND_ME(Carray, offsetUnset, arginfo_class_Carray_offsetUnset, ZEND_ACC_PUBLIC)
+	ZEND_ME(Carray, getIterator, arginfo_class_Carray_getIterator, ZEND_ACC_PUBLIC)
+	ZEND_ME(Carray, sub, arginfo_class_Carray_sub, ZEND_ACC_PUBLIC)
+	ZEND_FE_END
+};
+
+
+static const zend_function_entry class_Csu8_methods[] = {
+	ZEND_ME(Csu8, __construct, arginfo_class_Csu8___construct, ZEND_ACC_PUBLIC)
+	ZEND_ME(Csu8, __toString, arginfo_class_Csu8___toString, ZEND_ACC_PUBLIC)
+	ZEND_ME(Csu8, getIterator, arginfo_class_Csu8_getIterator, ZEND_ACC_PUBLIC)
+	ZEND_FE_END
+};
+
+
+static const zend_function_entry class_Csu32_methods[] = {
+	ZEND_ME(Csu32, __construct, arginfo_class_Csu32___construct, ZEND_ACC_PUBLIC)
+	ZEND_ME(Csu32, __toString, arginfo_class_Csu32___toString, ZEND_ACC_PUBLIC)
 	ZEND_FE_END
 };

@@ -15,25 +15,29 @@
 #include "phiz_str8.h"
 #include "phiz_carray.h"
 
-
 ZEND_DECLARE_MODULE_GLOBALS(phiz)
 static PHP_GINIT_FUNCTION(phiz);
 static PHP_GSHUTDOWN_FUNCTION(phiz);
 
 PHPAPI void 
 phiz_register_std_class(zend_class_entry ** ppce, 
-	char * class_name, void * obj_ctor, 
-	const zend_function_entry* function_list)
+	char * class_name,  const zend_function_entry* function_list)
 {
 	zend_class_entry ce;
 
 	INIT_CLASS_ENTRY_EX(ce, class_name, strlen(class_name), function_list);
 	*ppce = zend_register_internal_class(&ce);
+}
 
-	/* entries changed by initialize */
-	if (obj_ctor) {
-		(*ppce)->create_object = obj_ctor;
-	}
+PHPAPI void 
+phiz_register_child_class(zend_class_entry ** ppce, 
+	zend_class_entry *parent, 
+	char * class_name, const zend_function_entry* function_list)
+{
+	zend_class_entry ce;
+
+	INIT_CLASS_ENTRY_EX(ce, class_name, strlen(class_name), function_list);
+	*ppce = zend_register_internal_class_ex(&ce, parent);
 }
 
 /* {{{ PHP_MINIT_FUNCTION */
@@ -425,4 +429,14 @@ ZEND_FUNCTION(str_camel) {
 	ZEND_PARSE_PARAMETERS_END();
 
 	phiz_camel(return_value, src, sep );
+}
+
+ZEND_FUNCTION(toml_parse) {
+	zend_string* src = NULL;
+
+	ZEND_PARSE_PARAMETERS_START(1, 1)
+		Z_PARAM_STR(src)
+	ZEND_PARSE_PARAMETERS_END();
+
+	
 }

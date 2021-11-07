@@ -1,6 +1,6 @@
 <?php
 /** @generate-function-entries */
-class CArray implements  IteratorAggregate, ArrayAccess, Countable {
+class Carray implements  IteratorAggregate, ArrayAccess, Countable {
 	public function __construct(int $typeEnum, int $size = 0) {}
 
     /** @return int */
@@ -60,4 +60,32 @@ class CArray implements  IteratorAggregate, ArrayAccess, Countable {
 
 
     public function getIterator(): Iterator {}
+     
+    /** 
+     * @param int $start
+     * @param int $len
+     * @return CArray
+     *      
+     */    
+    public function sub(int $start, int $len) : CArray {}
 }
+
+/** @generate-function-entries */
+class Csu8 implements IteratorAggregate {
+    public function __construct(string $s) {}
+
+    /** @return string */
+    public function __toString() : string {}
+
+
+    public function getIterator(): Iterator {}
+}
+
+   /** @generate-function-entries */
+class Csu32 extends CArray {
+    public function __construct(string $s) {}
+
+    /** @return string */
+    public function __toString() : string {}
+}
+

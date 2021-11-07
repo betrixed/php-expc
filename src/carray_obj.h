@@ -16,7 +16,6 @@ typedef enum _CArray_EType {
 	CAT_INT32 = 8,
 	CAT_UINT32 = 9,
 	CAT_INT64 = 16,
-	//CAT_UINT64 = 17,
 	CAT_REAL32 = 32,
 	CAT_REAL64 = 64,
 	CAT_MIXED = 128
@@ -31,26 +30,45 @@ typedef enum _CArray_Error {
 
 typedef struct _carray_obj* p_carray_obj;
 
-typedef struct _carray_obj_fntab {
-	uint32_t 	etype;  // type enumerator
-	uint32_t	ctdt;   // 0|1 Must call ctor and dtor  
-	size_t  esize;		// element storage in bytes
-	char*	ename;	    // common type name
-	void (*init_elems)(p_carray_obj self, long from, long to);
-	void (*dtor_elems)(p_carray_obj self, long from, long to);
-	void (*copy_elems)(p_carray_obj self, long offset,  p_carray_obj other, long begin, long end);
-	zval* (*get_zval)(p_carray_obj self, long offset, zval *zp); 
-	int (*set_zval)(p_carray_obj self, long offset, zval *zp); 
+typedef struct _garray*		p_garray;
+
+typedef struct _gen_array_fntab {
+	uint64_t  	esize;		// element storage in bytes
+	char*		ename;	// common type name
+	uint32_t	ctdt;   // 0|1 Must call elements ctor and dtor  
+	uint32_t	etype;  // type indicator    ma
+	
+	void (*init_elems)(p_garray self, long from, long to);
+	void (*dtor_elems)(p_garray self, long from, long to);
+	void (*copy_elems)(p_garray self, long offset,  
+		               p_garray other, long begin, long end);
+
+}
+gen_array_fntab;
+
+typedef struct _zarray_fntab {
+	zval* (*get_zval)(p_carray_obj self, zend_long offset, zval *zp); 
+	int (*set_zval)(p_carray_obj self, zend_long offset, zval *zp); 
 	zend_object_iterator_funcs		zit_funcs;
 }
-carray_obj_fntab;
+zarray_fntab;
 
+typedef struct _array_head {
+	void* 				 	elements;	
+	size_t				 	size;
+	size_t					capacity;
+}
+array_head;
+
+typedef struct _garray {
+	array_head			head;
+	gen_array_fntab*    fntab;
+}
+garray;
 
 typedef struct _carray_obj {
-	carray_obj_fntab* 	 		fntab;
-	void* 				 		elements;	
-	size_t				 		size;
-	size_t						capacity;
+	garray              gen;
+	zarray_fntab*       zntab;
 }
 carray_obj;
 
@@ -89,11 +107,11 @@ void carray_etype_ctor(p_carray_obj this, int etype);
 void carray_copy_ctor(p_carray_obj this, p_carray_obj from);
 
 // works on all carray_obj
-int  pca_pushback(p_carray_obj, zval* value);
-void pca_resize(p_carray_obj this, long size);
-void pca_reserve(p_carray_obj this, long size);
-void pca_alloc(p_carray_obj this, long size);
-void pca_free(p_carray_obj this);
+int  pca_pushback(carray_obj*, zval* value);
+void gen_resize(garray* this, long size);
+void pca_reserve(garray* this, long size);
+void pca_alloc(garray* this, long size);
+void pca_free(garray* this);
 char* pca_get_type_str(int etype);
 
 #endif

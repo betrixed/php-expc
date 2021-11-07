@@ -1,6 +1,0 @@
-001+ Fatal error: Uncaught Error: Call to undefined function phiz_test2() in /home/michael/www/phiz/tests/003.php:2
-002+ Stack trace:
-001- string(11) "Hello World"
-002- string(9) "Hello PHP"
-003+ #0 {main}
-004+   thrown in /home/michael/www/phiz/tests/003.php on line 2

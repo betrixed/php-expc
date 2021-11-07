@@ -11,4 +11,6 @@ unsigned int ucode8Fore(
 	);
 extern const char32_t INVALID_CHAR;
 
+unsigned int utf32_str8(char32_t d, char (*result) [8]);
+
 #endif

@@ -4,7 +4,8 @@
 #include "php.h"
 #include "php_phiz.h"
 #include "phiz_str8.h"
-#include "phiz_str8_arginfo.h"
+//#include "phiz_str8_arginfo.h"
+#include "phiz_carray_arginfo.h"
 #include "Zend/zend_interfaces.h"
 #include "src/str8_obj.h"
 #include <zend_smart_str.h>
@@ -35,9 +36,9 @@ Z_PHIZ_STR8_P(zval *zv)
 } 
 
 // structure for pointer to functions
-zend_object_handlers 	phiz_handler_Str8;
+zend_object_handlers 	phiz_handler_Csu8;
 
-PHPAPI zend_class_entry *phiz_ce_Str8;
+PHPAPI zend_class_entry *phiz_ce_Csu8;
 
 static void str8_quickit_dtor(zend_object_iterator *iter)
 {
@@ -132,7 +133,7 @@ zend_object_iterator *str8_get_iterator(
 }
 
 /* {{{ Constructs a new Utf8 string iterator from a string */
-PHP_METHOD(Str8, __construct)
+PHP_METHOD(Csu8, __construct)
 {
 	zval *object = ZEND_THIS;
 	phiz_str8_obj* intern;
@@ -153,7 +154,7 @@ PHP_METHOD(Str8, __construct)
 }
 
 /* Create a new iterator from instance. */
-PHP_METHOD(Str8, getIterator)
+PHP_METHOD(Csu8, getIterator)
 {
 	if (zend_parse_parameters_none() == FAILURE) {
 		return;
@@ -163,7 +164,7 @@ PHP_METHOD(Str8, getIterator)
 }
 
 /* {{{ Return the iterated string */
-PHP_METHOD(Str8, __toString)
+PHP_METHOD(Csu8, __toString)
 {
 	zval *object = ZEND_THIS;
 	phiz_str8_obj* intern;
@@ -174,6 +175,14 @@ PHP_METHOD(Str8, __toString)
 }
 
 
+PHP_METHOD(Csu8, getUtf32) {
+	zval *object = ZEND_THIS;
+	phiz_str8_obj* intern;
+
+	intern = Z_PHIZ_STR8_P(object);
+
+	
+}
 // not implementing inherited (yet)
 static zend_object *phiz_str8_new_ex(zend_class_entry *class_type,
 									zend_object *orig, bool clone_orig)
@@ -186,8 +195,8 @@ static zend_object *phiz_str8_new_ex(zend_class_entry *class_type,
 	zend_object_std_init(&intern->std, class_type);
 	object_properties_init(&intern->std, class_type);
 	while(parent) {
-		if (parent == phiz_ce_Str8) {
-			intern->std.handlers = &phiz_handler_Str8;
+		if (parent == phiz_ce_Csu8) {
+			intern->std.handlers = &phiz_handler_Csu8;
 			break;
 		}
 		parent = parent->parent;
@@ -227,20 +236,20 @@ static void phiz_str8_free_storage(zend_object *object)
 PHP_MINIT_FUNCTION(phiz_str8)
 {
 
-	phiz_register_std_class(&phiz_ce_Str8, "Str8", 
-		phiz_str8_new, class_Str8_methods);
+	phiz_register_std_class(&phiz_ce_Csu8, "Csu8", class_Csu8_methods);
+	phiz_ce_Csu8->create_object = phiz_str8_new;
 
-	memcpy(&phiz_handler_Str8, &std_object_handlers, sizeof(zend_object_handlers));
+	memcpy(&phiz_handler_Csu8, &std_object_handlers, sizeof(zend_object_handlers));
 
-	phiz_handler_Str8.offset = XtOffsetOf(phiz_str8_obj, std);
-	phiz_handler_Str8.clone_obj = phiz_str8_clone;
-	phiz_handler_Str8.dtor_obj  = zend_objects_destroy_object;
-	phiz_handler_Str8.free_obj  = phiz_str8_free_storage;
+	phiz_handler_Csu8.offset = XtOffsetOf(phiz_str8_obj, std);
+	phiz_handler_Csu8.clone_obj = phiz_str8_clone;
+	phiz_handler_Csu8.dtor_obj  = zend_objects_destroy_object;
+	phiz_handler_Csu8.free_obj  = phiz_str8_free_storage;
 
-	REGISTER_PHIZ_IMPLEMENTS(Str8, Aggregate);
+	REGISTER_PHIZ_IMPLEMENTS(Csu8, Aggregate);
 
-	phiz_ce_Str8->get_iterator = str8_get_iterator;
-	phiz_ce_Str8->ce_flags |= ZEND_ACC_REUSE_GET_ITERATOR;
+	phiz_ce_Csu8->get_iterator = str8_get_iterator;
+	phiz_ce_Csu8->ce_flags |= ZEND_ACC_REUSE_GET_ITERATOR;
 }
 
 

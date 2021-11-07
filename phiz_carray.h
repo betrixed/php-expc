@@ -3,7 +3,8 @@
 
 #include <stdint.h>
 
-extern PHPAPI zend_class_entry *phiz_ce_CArray;
+extern PHPAPI zend_class_entry *phiz_ce_Carray;
+extern PHPAPI zend_class_entry *phiz_ce_Csu32;
 extern PHPAPI zend_class_entry *phiz_ce_RuntimeException;
 
 PHP_MINIT_FUNCTION(phiz_carray);

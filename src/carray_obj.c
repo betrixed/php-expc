@@ -11,30 +11,30 @@
 #include "carray_obj.h"
 
 
-void pca_alloc(p_carray_obj this, long size) {
+void pca_alloc(garray* this, long size) {
 	if (size > 0) {
-		this->size = 0; /* reset size in case ecalloc() fails */
-		this->elements = safe_emalloc(size, this->fntab->esize, 0);
-		this->size = size;
+		this->head.size = 0; /* reset size in case ecalloc() fails */
+		this->head.elements = safe_emalloc(size, this->fntab->esize, 0);
+		this->head.size = size;
 	}
 }
 
-bool pca_is_empty(p_carray_obj this) {
-	if (this->elements) {
-		ZEND_ASSERT(this->size > 0);
+bool pca_is_empty(garray* this) {
+	if (this->head.elements) {
+		ZEND_ASSERT(this->head.size > 0);
 		return false;
 	}
-	ZEND_ASSERT(this->size == 0);
+	ZEND_ASSERT(this->head.size == 0);
 	return true;
 }
 
-void pca_free(p_carray_obj this)
+void pca_free(garray* this)
 {
 	if (!pca_is_empty(this)) {
-		efree(this->elements);
-		this->elements = NULL;
-		this->capacity = 0;
-		this->size = 0;
+		efree(this->head.elements);
+		this->head.elements = NULL;
+		this->head.capacity = 0;
+		this->head.size = 0;
 	}
 }
 
@@ -84,67 +84,67 @@ static long capacity_mark[kmax_cap_index] =
 
 // Make allocations and deallocations go here
 // Can set exact capacity, not below current size
-void pca_reserve(p_carray_obj this, long newCapacity) {
+void pca_reserve(garray* this, long newCapacity) {
 	int esize;
 
-	if (newCapacity < this->size) {
-		newCapacity = this->size;
+	if (newCapacity < this->head.size) {
+		newCapacity = this->head.size;
 	}
-	if (newCapacity == 0 && this->capacity > 0) {
-		if (this->elements) {
-			efree(this->elements);
-			this->elements = NULL;
-			this->capacity = 0;
+	if (newCapacity == 0 && this->head.capacity > 0) {
+		if (this->head.elements) {
+			efree(this->head.elements);
+			this->head.elements = NULL;
+			this->head.capacity = 0;
 			return;
 		}
 	}
 	esize = this->fntab->esize;
-	if (this->capacity == 0) {
-		this->elements = safe_emalloc(newCapacity, esize, 0);
+	if (this->head.capacity == 0) {
+		this->head.elements = safe_emalloc(newCapacity, esize, 0);
 	}
 	else {
-		this->elements = safe_erealloc(this->elements, newCapacity, esize, 0);
+		this->head.elements = safe_erealloc(this->head.elements, newCapacity, esize, 0);
 	}
-	this->capacity = newCapacity;
+	this->head.capacity = newCapacity;
 }
 
-int pca_pushback(p_carray_obj this, zval* value) {
+int pca_pushback(carray_obj* this, zval* value) {
 	// initialize with value
-	long offset = this->size;
-	pca_resize(this,offset+1);
-	return this->fntab->set_zval(this,offset,value);
+	long offset = this->gen.head.size;
+	gen_resize(&this->gen,offset+1);
+	return this->zntab->set_zval(this,offset,value);
 }
 
-void pca_resize(p_carray_obj this, long size) {
-	carray_obj_fntab* fntab;
+void gen_resize(garray* this, long size) {
+	gen_array_fntab* fntab;
 
-	if (this->size == size) {
+	if (this->head.size == size) {
 		return;
 	}
 	fntab = this->fntab;
-	if (size > this->size) {
-		if (size > this->capacity) {
+	if (size > this->head.size) {
+		if (size > this->head.capacity) {
 			pca_reserve(this, next_cap_mark(size));
 		}
 		if (fntab->ctdt) {
-			fntab->init_elems(this,this->size,size);
+			fntab->init_elems(this,this->head.size,size);
 		}
-		this->size = size;
+		this->head.size = size;
 		return;
 	}
 	if (size == 0) {
-		if (this->size > 0 && fntab->ctdt) {
-			fntab->dtor_elems(this,0,this->size);
-			this->size = 0;
+		if (this->head.size > 0 && fntab->ctdt) {
+			fntab->dtor_elems(this,0,this->head.size);
+			this->head.size = 0;
 		}
 		pca_reserve(this,0);
 		return;
 	}
 	// 0 < size < this->size
 	if (fntab->ctdt) {
-		fntab->dtor_elems(this,size,this->size);
+		fntab->dtor_elems(this,size,this->head.size);
 	}	
-	this->size = size;
+	this->head.size = size;
 	return;
 }
 
@@ -165,7 +165,7 @@ static int carray_quickit_valid(zend_object_iterator *iter)
 	carray_quickit     *iterator = (carray_quickit*)iter;
 	pz_carray object   = Z_PHIZ_CARRAY_P(&iter->data);
 
-	if (iterator->current >= 0 && iterator->current < object->cobj.size) {
+	if (iterator->current >= 0 && iterator->current < object->cobj.gen.head.size) {
 		return SUCCESS;
 	}
 
@@ -185,7 +185,7 @@ static zval *carray_quickit_get_current_data(zend_object_iterator *iter)
 	*/
 	p_carray_obj pobj = &object->cobj;
 
-	return pobj->fntab->get_zval(pobj,iterator->current,&iterator->result);
+	return pobj->zntab->get_zval(pobj,iterator->current,&iterator->result);
 
 }
 
@@ -299,19 +299,19 @@ static void carray_quickit_move_forward(zend_object_iterator *iter)
 #include "cast_macro.c"
 
 // The zval array functions are special
-static void pca_init_zval (p_carray_obj this, long from, long to) 
+static void pca_init_zval (garray* this, long from, long to) 
 {
-	zval* begin = (zval*) this->elements + from;
-	zval* end = (zval*) this->elements + to;
+	zval* begin = (zval*) this->head.elements + from;
+	zval* end = (zval*) this->head.elements + to;
 	while (begin != end) {
 		 ZVAL_NULL(begin);
 		 begin++;
 	}
 }
-static void pca_dtor_zval (p_carray_obj this, long from, long to) 
+static void pca_dtor_zval (garray* this, long from, long to) 
 {
-	zval* begin = (zval*) this->elements + from;
-	zval* end = (zval*) this->elements + to;
+	zval* begin = (zval*) this->head.elements + from;
+	zval* end = (zval*) this->head.elements + to;
 	while (begin != end) {
 		 zval_dtor(begin);
 		 ZVAL_NULL(begin);
@@ -320,11 +320,11 @@ static void pca_dtor_zval (p_carray_obj this, long from, long to)
 }
 
 static void pca_copy_zval
- (p_carray_obj this, zend_long offset, p_carray_obj other, zend_long begin, zend_long end)
+ (garray* this, zend_long offset, garray* other, zend_long begin, zend_long end)
 {
-	zval *to = (zval*) this->elements + offset;
-	zval *bgp = (zval*) other->elements + begin;
-	zval *ep = (zval*) other->elements + end;
+	zval *to = (zval*) this->head.elements + offset;
+	zval *bgp = (zval*) other->head.elements + begin;
+	zval *ep = (zval*) other->head.elements + end;
 
 	while (bgp != ep) {
 		ZVAL_COPY(to++,bgp++);
@@ -334,7 +334,7 @@ static void pca_copy_zval
 static zval* pca_get_zval
 ( p_carray_obj this, zend_long offset,  zval* retval)
 {
-	return (zval*) this->elements + offset;
+	return (zval*) this->gen.head.elements + offset;
 }
 
 #define pca_setzval_name   CAT2(pca_setzval_,PHIZ_CAST_NAME)
@@ -342,7 +342,7 @@ static zval* pca_get_zval
 static int pca_set_zval
 ( p_carray_obj this, zend_long offset,  zval* setval)
 {
-	zval* val = (zval*) this->elements + offset;
+	zval* val = (zval*) this->gen.head.elements + offset;
 	zval_ptr_dtor(val);
 	ZVAL_COPY_DEREF(val, setval);
 	return CATE_OK;
@@ -355,17 +355,20 @@ static zval* pcait_getdata_zval
 	carray_quickit  *iterator = (carray_quickit*)iter;
 	pz_carray object   = Z_PHIZ_CARRAY_P(&iter->data);
 	p_carray_obj this = &object->cobj;
-	return (zval*) this->elements + iterator->current;
+	return (zval*) this->gen.head.elements + iterator->current;
 }
 
-static carray_obj_fntab mixed_fntab = {
-	CAT_MIXED,
-	1,
+static gen_array_fntab mixed_fntab = {
 	sizeof(zval),
 	"mixed",
+	1,
+	CAT_MIXED,
 	pca_init_zval,
 	pca_dtor_zval,
-	pca_copy_zval,
+	pca_copy_zval
+};
+
+static zarray_fntab mixed_zntab = {
 	pca_get_zval,
 	pca_set_zval,
 	{
@@ -382,51 +385,61 @@ static carray_obj_fntab mixed_fntab = {
 void carray_etype_ctor(p_carray_obj this, int etype) {
 	switch(etype) {
 		case CAT_INT8:
-			this->fntab = &int8_fntab;
+			this->zntab = &int8_zntab;
+			this->gen.fntab = &int8_fntab;
 			break;
 		case CAT_UINT8:
-			this->fntab = &uint8_fntab;
+			this->zntab = &uint8_zntab;
+			this->gen.fntab = &uint8_fntab;
 			break;
 		case CAT_INT16:
-			this->fntab = &int16_fntab;
+			this->zntab = &int16_zntab;
+			this->gen.fntab = &uint16_fntab;
 			break;
 		case CAT_UINT16:
-			this->fntab = &uint16_fntab;
+			this->zntab = &uint16_zntab;
+			this->gen.fntab = &uint16_fntab;
 			break;
 		case CAT_INT32: 
-			this->fntab = &int32_fntab;
+			this->zntab = &int32_zntab;
+			this->gen.fntab = &int32_fntab;
 			break;
 		case CAT_UINT32: 
-			this->fntab = &uint32_fntab;
+			this->zntab = &uint32_zntab;
+			this->gen.fntab = &uint32_fntab;
 			break;
 		case CAT_INT64: 
-			this->fntab = &int64_fntab;
+			this->zntab = &int64_zntab;
+			this->gen.fntab = &int64_fntab;
 			break;
 		/*case CAT_UINT64: 
 			this->fntab = &uint64_fntab;
 			break;*/
 		case CAT_REAL32: 
-			this->fntab = &float_fntab;
+			this->zntab = &float_zntab;
+			this->gen.fntab = &float_fntab;
 			break;
 		case CAT_REAL64: 
-			this->fntab = &double_fntab;
+			this->zntab = &double_zntab;
+			this->gen.fntab = &double_fntab;
 			break;
 		case CAT_MIXED:
-			this->fntab = &mixed_fntab;
+			this->zntab = &mixed_zntab;
+			this->gen.fntab = &mixed_fntab;
 			break;
 	}
-	this->elements = NULL;
-	this->capacity = 0;
-	this->size = 0;
+	this->gen.head.elements = NULL;
+	this->gen.head.capacity = 0;
+	this->gen.head.size = 0;
 }
 
 void carray_copy_ctor(p_carray_obj this, p_carray_obj from)
 {
-	carray_etype_ctor(this, from->fntab->etype);
-	int size = from->size;
-	if (size > 0) {
-		pca_alloc(this,from->size);
-		(this->fntab)->copy_elems(this,0,from,0,from->size);
+	carray_etype_ctor(this, from->gen.fntab->etype);
+	int from_size = from->gen.head.size;
+	if (from_size > 0) {
+		pca_alloc(&this->gen,from_size);
+		(this->gen.fntab)->copy_elems(&this->gen,0,&from->gen,0,from_size);
 	}
 }
 

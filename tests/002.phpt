@@ -12,5 +12,12 @@ $ret = route_extract_params("/series/{id}");
 var_dump($ret);
 ?>
 --EXPECT--
-The extension phiz is loaded and working!
-NULL
+array(2) {
+  [0]=>
+  string(15) "/series/([^/]*)"
+  [1]=>
+  array(1) {
+    ["id"]=>
+    int(1)
+  }
+}

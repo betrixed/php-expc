@@ -5,6 +5,7 @@
 #include "carray_obj.h"
 #include "ucode8.h"
 #include "phiz_carray.h"
+#include "ext/pcre/php_pcre.h"
 
 enum {
 	tom_Bad = 0,
@@ -99,6 +100,7 @@ toml_token;
 
 typedef struct _toml_stream {
 	toml_token*     token;
+	zval*           shold;
 	char*		    sptr;
 	uint64_t		slen;
 	uint64_t	    index;
@@ -240,6 +242,10 @@ int ts_firstMatch(toml_stream* oo) {
 	int* expSet = oo->expSet;
 	zval *pzval;
 	int  exp_index;
+	pcre_cache_entry* entry;
+	zval  retval;
+	zval  matches;
+	ZVAL_NULL(&retval);
 
 	while(exp_index = *expSet++) {
 
@@ -247,8 +253,22 @@ int ts_firstMatch(toml_stream* oo) {
 		if (Z_TYPE(pzval) !== IS_STRING) { // TODO:DEBUG
 			zend_throw_exception_ex(phiz_ce_RuntimeException, 0,
 			"Invalid expression index %ld", (long)exp_index);
-}
 		}
+
+		entry = pcre_get_compiled_regex_cache(Z_STR(pzval));
+		ZVAL_NULL(&matches);
+
+		php_pcre_match_impl(entry, oo->shold, &retval, &matches, 
+			REGIT_MODE_ALL_MATCHES, 0, 0, oo->index);
+		
+		// restore the strings char* and len
+		theStr->value->val = oo->sptr;
+		theStr->value->len = oo->slen;
+
+		if()
+		Z_TRY_DELREF(&matches);
+
+
 	}
 }
 /**
@@ -334,10 +354,12 @@ HashTable* toml_make_regx_table()
 }
 
 HashTable*
- 	toml_stream_parse(toml_stream* ts, char* strp, int slen)
+ 	toml_stream_parse(toml_stream* ts, zval* str)
 {
-	ts->sptr = strp;
-	ts->slen = slen;
+	//ZVAL_COPY_VALUE(&ts->shold, str); // no inc ref counter
+	ts->shold = str;
+	ts->sptr = Z_STRVAL(str);
+	ts->slen = Z_STRLEN(str);
 	ts->flagLF = 0;
 	ts->index = 0;
 	ts->eosid = tom_EOS;

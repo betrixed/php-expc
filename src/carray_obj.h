@@ -74,16 +74,19 @@ carray_obj;
 
 typedef struct _phiz_carray_obj* pz_carray;
 
-typedef struct _phiz_carray_obj {
-	carray_obj           cobj;		// embedded polymorphic array
 	//-- these ackward complicating function pointers 
 	//-- are here for the case when a derived class object implements an override method
+typedef struct _phiz_carray_methods {
 	zend_function       *fptr_offset_get;
 	zend_function       *fptr_offset_set;
 	zend_function       *fptr_offset_has;
 	zend_function       *fptr_offset_del;
 	zend_function       *fptr_count;
-	//-- standard object
+} phiz_carray_methods;
+
+typedef struct _phiz_carray_obj {
+	carray_obj           cobj;		// embedded polymorphic array
+	phiz_carray_methods  *methods;
 	zend_object          std;
 } phiz_carray_obj;
 

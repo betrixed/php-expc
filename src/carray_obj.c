@@ -10,7 +10,6 @@
 #include "zend_exceptions.h"
 #include "carray_obj.h"
 
-
 void pca_alloc(garray* this, long size) {
 	if (size > 0) {
 		this->head.size = 0; /* reset size in case ecalloc() fails */

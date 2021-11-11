@@ -59,7 +59,7 @@ PHP_METHOD(Csu32, __construct)
 	phiz_str8_init(&s8, ZSTR_VAL(str), ZSTR_LEN(str));
 	while(phiz_str8_move(&s8)) {
 		mysize = pobj->gen.head.size;
-		pca_resize(&pobj->gen,mysize+1);
+		gen_resize(&pobj->gen,mysize+1);
 		*((uint32_t*)(pobj->gen.head.elements)+mysize) = s8.ucode;
 	}
 }
@@ -139,7 +139,7 @@ PHP_METHOD(Carray, resize)
 
 	intern = Z_PHIZ_CARRAY_P(ZEND_THIS);
 
-	pca_resize(&intern->cobj.gen, size);
+	gen_resize(&intern->cobj.gen, size);
 	RETURN_TRUE;
 
 }
@@ -310,20 +310,16 @@ try_again:
 }
 
 
-
-
 static int carray_obj_has_dimension(zend_object *object, zval *offset, int check_empty)
 {
 	pz_carray intern = phiz_carray_from_obj(object);
 	zend_long index;
 
-	if (intern->fptr_offset_has) {
+	if (UNEXPECTED(intern->methods && intern->methods->fptr_offset_has)) {
 		zval rv;
 		zend_bool result;
 
-		SEPARATE_ARG_IF_REF(offset);
-		zend_call_method_with_1_params(object, intern->std.ce, &intern->fptr_offset_has, "offsetExists", &rv, offset);
-		zval_ptr_dtor(offset);
+		zend_call_method_with_1_params(object, intern->std.ce, &intern->methods->fptr_offset_has, "offsetExists", &rv, offset);
 		result = zend_is_true(&rv);
 		zval_ptr_dtor(&rv);
 		return result;
@@ -385,17 +381,12 @@ static void carray_obj_write_dimension(zend_object *object, zval *offset, zval *
 	zval tmp;
 	pz_carray intern = phiz_carray_from_obj(object);
 
-	if (intern->fptr_offset_set) {
+	if (UNEXPECTED(intern->methods && intern->methods->fptr_offset_set)) {
 		if (!offset) {
 			ZVAL_NULL(&tmp);
 			offset = &tmp;
-		} else {
-			SEPARATE_ARG_IF_REF(offset);
-		}
-		SEPARATE_ARG_IF_REF(value);
-		zend_call_method_with_2_params(object, intern->std.ce, &intern->fptr_offset_set, "offsetSet", NULL, offset, value);
-		zval_ptr_dtor(value);
-		zval_ptr_dtor(offset);
+		} 
+		zend_call_method_with_2_params(object, intern->std.ce, &intern->methods->fptr_offset_set, "offsetSet", NULL, offset, value);
 		return;
 	}
 
@@ -441,16 +432,13 @@ static zval *carray_obj_read_dimension(
 		return &EG(uninitialized_zval);
 	}
 
-	if (intern->fptr_offset_get) {
+	if (UNEXPECTED(intern->methods && intern->methods->fptr_offset_get)) {
 		zval tmp;
 		if (!offset) {
 			ZVAL_NULL(&tmp);
 			offset = &tmp;
-		} else {
-			SEPARATE_ARG_IF_REF(offset);
-		}
-		zend_call_method_with_1_params(object, intern->std.ce, &intern->fptr_offset_get, "offsetGet", rv, offset);
-		zval_ptr_dtor(offset);
+		} 
+		zend_call_method_with_1_params(object, intern->std.ce, &intern->methods->fptr_offset_get, "offsetGet", rv, offset);
 		if (!Z_ISUNDEF_P(rv)) {
 			return rv;
 		}
@@ -617,28 +605,32 @@ static zend_object *phiz_carray_new_ex(zend_class_entry *class_type,
 
 	ZEND_ASSERT(parent);
 
-	if (inherited) {
-		intern->fptr_offset_get = zend_hash_str_find_ptr(&class_type->function_table, "offsetget", sizeof("offsetget") - 1);
-		if (intern->fptr_offset_get->common.scope == parent) {
-			intern->fptr_offset_get = NULL;
+	if (UNEXPECTED(inherited)) {
+		phiz_carray_methods methods;
+		methods.fptr_offset_get = zend_hash_str_find_ptr(&class_type->function_table, "offsetget", sizeof("offsetget") - 1);
+		if (methods.fptr_offset_get->common.scope == parent) {
+			methods.fptr_offset_get = NULL;
 		}
-		intern->fptr_offset_set = zend_hash_str_find_ptr(&class_type->function_table, "offsetset", sizeof("offsetset") - 1);
-		if (intern->fptr_offset_set->common.scope == parent) {
-			intern->fptr_offset_set = NULL;
+		methods.fptr_offset_set = zend_hash_str_find_ptr(&class_type->function_table, "offsetset", sizeof("offsetset") - 1);
+		if (methods.fptr_offset_set->common.scope == parent) {
+			methods.fptr_offset_set = NULL;
 		}
-		intern->fptr_offset_has = zend_hash_str_find_ptr(&class_type->function_table, "offsetexists", sizeof("offsetexists") - 1);
-		if (intern->fptr_offset_has->common.scope == parent) {
-			intern->fptr_offset_has = NULL;
+		methods.fptr_offset_has = zend_hash_str_find_ptr(&class_type->function_table, "offsetexists", sizeof("offsetexists") - 1);
+		if (methods.fptr_offset_has->common.scope == parent) {
+			methods.fptr_offset_has = NULL;
 		}
-		intern->fptr_offset_del = zend_hash_str_find_ptr(&class_type->function_table, "offsetunset", sizeof("offsetunset") - 1);
-		if (intern->fptr_offset_del->common.scope == parent) {
-			intern->fptr_offset_del = NULL;
+		methods.fptr_offset_del = zend_hash_str_find_ptr(&class_type->function_table, "offsetunset", sizeof("offsetunset") - 1);
+		if (methods.fptr_offset_del->common.scope == parent) {
+			methods.fptr_offset_del = NULL;
 		}
-		intern->fptr_count = zend_hash_str_find_ptr(&class_type->function_table, "count", sizeof("count") - 1);
-		if (intern->fptr_count->common.scope == parent) {
-			intern->fptr_count = NULL;
+		methods.fptr_count = zend_hash_str_find_ptr(&class_type->function_table, "count", sizeof("count") - 1);
+		if (methods.fptr_count->common.scope == parent) {
+			methods.fptr_count = NULL;
 		}
-
+		if (methods.fptr_offset_get || methods.fptr_offset_set || methods.fptr_offset_del || methods.fptr_offset_has || methods.fptr_count) {
+			intern->methods = emalloc(sizeof(phiz_carray_methods));
+			*intern->methods = methods;
+		}
 	}
 
 	return &intern->std;
@@ -654,6 +646,9 @@ static void phiz_carray_free_storage(zend_object *object)
 {
 	pz_carray intern = phiz_carray_from_obj(object);
 	pca_free(&intern->cobj.gen);
+	if (intern->methods) {
+		efree(intern->methods);
+	}
 	zend_object_std_dtor(&intern->std);
 }
 
@@ -673,10 +668,10 @@ static void carray_obj_unset_dimension_helper(pz_carray intern, zval *offset)
 {
 	zend_long index;
 
-	if (Z_TYPE_P(offset) != IS_LONG) {
-		index = phiz_offset_convert_to_long(offset);
-	} else {
-		index = Z_LVAL_P(offset);
+
+	index = phiz_offset_convert_to_long(offset);
+	if (EG(exception)) {
+		return;
 	}
 
 	if (index < 0 || index >= intern->cobj.gen.head.size) {
@@ -695,10 +690,8 @@ static void carray_obj_unset_dimension(zend_object *object, zval *offset)
 {
 	pz_carray intern = phiz_carray_from_obj(object);
 
-	if (intern->fptr_offset_del) {
-		SEPARATE_ARG_IF_REF(offset);
-		zend_call_method_with_1_params(object, intern->std.ce, &intern->fptr_offset_del, "offsetUnset", NULL, offset);
-		zval_ptr_dtor(offset);
+	if (UNEXPECTED(intern->methods && intern->methods->fptr_offset_del)) {
+		zend_call_method_with_1_params(object, intern->std.ce, &intern->methods->fptr_offset_del, "offsetUnset", NULL, offset);
 		return;
 	}
 
@@ -708,9 +701,9 @@ static void carray_obj_unset_dimension(zend_object *object, zval *offset)
 static int carray_obj_count_elements(zend_object *object, zend_long *count)
 {
 	pz_carray intern = phiz_carray_from_obj(object);
-	if (intern->fptr_count) {
+	if (UNEXPECTED(intern->methods && intern->methods->fptr_count)) {
 		zval rv;
-		zend_call_method_with_0_params(object, intern->std.ce, &intern->fptr_count, "count", &rv);
+		zend_call_method_with_0_params(object, intern->std.ce, &intern->methods->fptr_count, "count", &rv);
 		if (!Z_ISUNDEF(rv)) {
 			*count = zval_get_long(&rv);
 			zval_ptr_dtor(&rv);

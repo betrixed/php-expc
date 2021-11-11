@@ -14,6 +14,7 @@
 
 #include "phiz_str8.h"
 #include "phiz_carray.h"
+#include "src/ucode8.h"
 
 ZEND_DECLARE_MODULE_GLOBALS(phiz)
 static PHP_GINIT_FUNCTION(phiz);
@@ -429,6 +430,33 @@ ZEND_FUNCTION(str_camel) {
 	ZEND_PARSE_PARAMETERS_END();
 
 	phiz_camel(return_value, src, sep );
+}
+
+ZEND_FUNCTION(str_utf8c) {
+	zend_string* src = NULL;
+	zend_long    offset = 0;
+	zval*	   code_ref = 0;
+	zend_long        rlen;
+	char32_t		ucode;
+
+	ZEND_PARSE_PARAMETERS_START(3, 3)
+		Z_PARAM_STR(src)
+		Z_PARAM_LONG(offset)
+		Z_PARAM_ZVAL(code_ref)
+	ZEND_PARSE_PARAMETERS_END();
+
+	char* s = ZSTR_VAL(src);
+	long  slen = ZSTR_LEN(src);
+	if (offset >= 0 && offset < slen) {
+		rlen = ucode8Fore(s + offset, slen - offset, &ucode);
+
+		ZVAL_LONG(Z_REFVAL_P(code_ref), ucode);
+		ZVAL_STRINGL(return_value,s+offset, rlen);
+	}
+	else {
+		ZVAL_LONG(Z_REFVAL_P(code_ref), 0);
+		ZVAL_EMPTY_STRING(return_value);
+	}
 }
 
 ZEND_FUNCTION(toml_parse) {

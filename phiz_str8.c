@@ -175,14 +175,6 @@ PHP_METHOD(Csu8, __toString)
 }
 
 
-PHP_METHOD(Csu8, getUtf32) {
-	zval *object = ZEND_THIS;
-	phiz_str8_obj* intern;
-
-	intern = Z_PHIZ_STR8_P(object);
-
-	
-}
 // not implementing inherited (yet)
 static zend_object *phiz_str8_new_ex(zend_class_entry *class_type,
 									zend_object *orig, bool clone_orig)

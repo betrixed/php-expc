@@ -1,46 +1,51 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 0f334d7260d77603ab25417f7a8afe96e8a0a6ee */
+ * Stub hash: dce7ee031e5512d1ebf4e9ca86fc1990875de785 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Carray___construct, 0, 0, 1)
 	ZEND_ARG_TYPE_INFO(0, typeEnum, IS_LONG, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, size, IS_LONG, 0, "0")
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Carray_count, 0, 0, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Carray_count, 0, 0, IS_LONG, 0)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_Carray_toArray arginfo_class_Carray_count
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Carray_toArray, 0, 0, 0)
+ZEND_END_ARG_INFO()
 
-#define arginfo_class_Carray_getTypeEnum arginfo_class_Carray_count
+#define arginfo_class_Carray_getTypeEnum arginfo_class_Carray_toArray
 
-#define arginfo_class_Carray_getTypeName arginfo_class_Carray_count
+#define arginfo_class_Carray_getTypeName arginfo_class_Carray_toArray
 
-#define arginfo_class_Carray_getTypeSize arginfo_class_Carray_count
+#define arginfo_class_Carray_getTypeSize arginfo_class_Carray_toArray
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Carray_reserve, 0, 0, 1)
 	ZEND_ARG_TYPE_INFO(0, size, IS_LONG, 0)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_Carray_size arginfo_class_Carray_count
+#define arginfo_class_Carray_size arginfo_class_Carray_toArray
 
-#define arginfo_class_Carray_capacity arginfo_class_Carray_count
+#define arginfo_class_Carray_capacity arginfo_class_Carray_toArray
 
 #define arginfo_class_Carray_resize arginfo_class_Carray_reserve
 
-#define arginfo_class_Carray_signedType arginfo_class_Carray_count
+#define arginfo_class_Carray_signedType arginfo_class_Carray_toArray
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Carray_offsetExists, 0, 0, 1)
-	ZEND_ARG_INFO(0, index)
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Carray_offsetExists, 0, 1, _IS_BOOL, 0)
+	ZEND_ARG_TYPE_INFO(0, index, IS_MIXED, 0)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_Carray_offsetGet arginfo_class_Carray_offsetExists
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Carray_offsetGet, 0, 1, IS_MIXED, 0)
+	ZEND_ARG_TYPE_INFO(0, index, IS_MIXED, 0)
+ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Carray_offsetSet, 0, 0, 2)
-	ZEND_ARG_INFO(0, index)
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Carray_offsetSet, 0, 2, IS_VOID, 0)
+	ZEND_ARG_TYPE_INFO(0, index, IS_MIXED, 0)
 	ZEND_ARG_TYPE_INFO(0, value, IS_MIXED, 0)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_Carray_offsetUnset arginfo_class_Carray_offsetExists
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Carray_offsetUnset, 0, 1, IS_VOID, 0)
+	ZEND_ARG_TYPE_INFO(0, index, IS_MIXED, 0)
+ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_WITH_RETURN_OBJ_INFO_EX(arginfo_class_Carray_getIterator, 0, 0, Iterator, 0)
 ZEND_END_ARG_INFO()

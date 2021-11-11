@@ -1,5 +1,5 @@
 --TEST--
-Create and iterator Csu32 from string
+Pluck UTF-8 character and code out of a string
 --SKIPIF--
 <?php
 if (!extension_loaded('phiz')) {
@@ -8,9 +8,13 @@ if (!extension_loaded('phiz')) {
 ?>
 --FILE--
 <?php
-$s = new Csu32("Hello world, Καλημέρα κόσμε, コンニチハ" );
-foreach($s as $ix => $val) {
-	echo "$ix: " . $val . PHP_EOL;
-}
+$s = "Hello world, Καλημέρα κόσμε, コンニチハ";
+$code = 0;
+$next = str_utf8c($s,13, $code);
+echo $next . " "  . dechex($code) . PHP_EOL;
+$next = str_utf8c($s,13 + strlen($next), $code);
+echo $next . " "  . dechex($code) . PHP_EOL;
 ?>
 --EXPECT--
+Κ 39a
+α 3b1

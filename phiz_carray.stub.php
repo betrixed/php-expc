@@ -3,8 +3,7 @@
 class Carray implements  IteratorAggregate, ArrayAccess, Countable {
 	public function __construct(int $typeEnum, int $size = 0) {}
 
-    /** @return int */
-    public function count() {}
+    public function count() : int {}
 
     /** @return array */
     public function toArray() {}
@@ -33,40 +32,21 @@ class Carray implements  IteratorAggregate, ArrayAccess, Countable {
     /** @return bool */
     public function signedType() {}
 
-    /**
-     * @param int $index
-     * @return bool
-     */
 
-	public function offsetExists($index) {}
+	public function offsetExists(mixed $index) : bool {}
 
-    /**
-     * @param int $index
-     * @return mixed
-     */
-    public function offsetGet($index) {}
+    public function offsetGet(mixed $index) : mixed {}
 
-    /**
-     * @param int $index
-     * @return void
-     */
-    public function offsetSet($index, mixed $value) {}
 
-    /**
-     * @param int $index
-     * @return void
-     */
-    public function offsetUnset($index) {}
+    public function offsetSet(mixed $index, mixed $value) : void {}
+
+
+    public function offsetUnset(mixed $index) : void {}
 
 
     public function getIterator(): Iterator {}
      
-    /** 
-     * @param int $start
-     * @param int $len
-     * @return CArray
-     *      
-     */    
+  
     public function sub(int $start, int $len) : CArray {}
 }
 
@@ -74,18 +54,18 @@ class Carray implements  IteratorAggregate, ArrayAccess, Countable {
 class Csu8 implements IteratorAggregate {
     public function __construct(string $s) {}
 
-    /** @return string */
     public function __toString() : string {}
 
 
     public function getIterator(): Iterator {}
+
 }
 
    /** @generate-function-entries */
 class Csu32 extends CArray {
     public function __construct(string $s) {}
 
-    /** @return string */
     public function __toString() : string {}
 }
 
+   /** @generate-function-entries */

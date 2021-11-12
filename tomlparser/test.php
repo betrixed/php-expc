@@ -1,8 +1,17 @@
 <?php
-include "utoken.php";
+
 include "tomlparser.php";
 
 	$p = new TomlParser();
-	$data = file_get_contents(__DIR__ . "/fruit.toml");
-	$r = $p->parse($data);
-	echo print_r($r, true) . PHP_EOL;
+        foreach( [
+            'fruit.toml', 
+            'example.toml', 
+            'hard_example.toml', 
+            'hard_example_unicode.toml'] 
+                as $name) {
+            $data = file_get_contents(__DIR__ . "/" . $name);
+
+            $r = $p->parse($data);
+
+            echo print_r($r, true) . PHP_EOL;
+       }

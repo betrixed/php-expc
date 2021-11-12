@@ -139,7 +139,7 @@ PHP_MINIT_FUNCTION(phiz_cregx)
 
 	phiz_ce_Cregx->create_object = phiz_cregx_new;
 
-	memcpy(&phiz_ce_Cregx, &std_object_handlers, sizeof(zend_object_handlers));
+	memcpy(&phiz_handler_Cregx, &std_object_handlers, sizeof(zend_object_handlers));
 
 	phiz_handler_Cregx.offset = XtOffsetOf(phiz_cregx, std);
 	phiz_handler_Cregx.clone_obj = phiz_cregx_clone;

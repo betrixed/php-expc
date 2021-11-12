@@ -7,6 +7,9 @@
 #error PHIZ_ZVAL_TYPE not defined
 #endif
 
+#ifndef PHIZ_CAST_NAME
+#error PHIZ_CAST_NAME not defined
+#endif
 
 #define CAT(a,b) a##b
 #define CAT2(a,b) CAT(a,b)

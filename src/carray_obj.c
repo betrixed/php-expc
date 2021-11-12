@@ -393,7 +393,7 @@ void carray_etype_ctor(p_carray_obj this, int etype) {
 			break;
 		case CAT_INT16:
 			this->zntab = &int16_zntab;
-			this->gen.fntab = &uint16_fntab;
+			this->gen.fntab = &int16_fntab;
 			break;
 		case CAT_UINT16:
 			this->zntab = &uint16_zntab;

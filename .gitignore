@@ -3,3 +3,5 @@
 build/**
 .libs/**
 **/*.log
+push_command.sh
+/nbproject/private/

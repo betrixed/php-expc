@@ -14,6 +14,7 @@
 
 #include "phiz_str8.h"
 #include "phiz_carray.h"
+#include "phiz_cregx.h"
 #include "src/ucode8.h"
 
 ZEND_DECLARE_MODULE_GLOBALS(phiz)
@@ -47,7 +48,7 @@ PHP_MINIT_FUNCTION(phiz)
 	//REGISTER_INI_ENTRIES();
 	PHP_MINIT(phiz_str8)(INIT_FUNC_ARGS_PASSTHRU);
 	PHP_MINIT(phiz_carray)(INIT_FUNC_ARGS_PASSTHRU);
-
+	PHP_MINIT(phiz_cregx)(INIT_FUNC_ARGS_PASSTHRU);
 	return SUCCESS;
 }
 /* }}} */

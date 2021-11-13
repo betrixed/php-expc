@@ -17,6 +17,8 @@
 #include "phiz_cregx.h"
 #include "src/ucode8.h"
 
+extern HashTable* toml_stream_parse(zval *sr);
+
 ZEND_DECLARE_MODULE_GLOBALS(phiz)
 static PHP_GINIT_FUNCTION(phiz);
 static PHP_GSHUTDOWN_FUNCTION(phiz);
@@ -295,7 +297,7 @@ ZEND_FUNCTION(route_extract_params)
 	add_next_index_str(return_value, route_str.s);
 
 
-	ZVAL_ARR(&tmp, matches);
+		(&tmp, matches);
 	add_next_index_zval(return_value, &tmp);
 	//Z_ADDREF_P(return_value);
 	//zval_ptr_dtor(&tmp);
@@ -467,5 +469,7 @@ ZEND_FUNCTION(toml_parse) {
 		Z_PARAM_STR(src)
 	ZEND_PARSE_PARAMETERS_END();
 
-	
+	HashTable* ht = toml_stream_parse(src);
+
+    ZVAL_ARR(return_value, ht);
 }

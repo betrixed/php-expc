@@ -6,6 +6,8 @@
 #include "ucode8.h"
 #include "phiz_carray.h"
 #include "ext/pcre/php_pcre.h"
+#include <zend_smart_str.h>
+
 
 #define PREG_START_LEN_OFFSET       (1<<10)
 
@@ -48,28 +50,28 @@ enum {
 
 // for regular expression processing
 
-const char cRexBool[] = "^(true|false)";
-const char cDateTime[] = "^(\\d{4}-\\d{2}-\\d{2}(T\\d{2}:\\d{2}:\\d{2}(\\.\\d{6})?(Z|-\\d{2}:\\d{2})?)?)";
-const char cFloatExp[] = "^([+-]?((\\d_?)+([\\.](\\d_?)*)?)([eE][+-]?(_?\\d_?)+))";
-const char cFloatDot[] = "^([+-]?((\\d_?)+([\\.](\\d_?)*)))";
-const char cInteger[] = "^([+-]?(\\d_?)+)";
+const char cRexBool[] = "(true|false)";
+const char cDateTime[] = "(\\d{4}-\\d{2}-\\d{2}(T\\d{2}:\\d{2}:\\d{2}(\\.\\d{6})?(Z|-\\d{2}:\\d{2})?)?)";
+const char cFloatExp[] = "([+-]?((\\d_?)+([\\.](\\d_?)*)?)([eE][+-]?(_?\\d_?)+))";
+const char cFloatDot[] = "([+-]?((\\d_?)+([\\.](\\d_?)*)))";
+const char cInteger[] = "([+-]?(\\d_?)+)";
 
-const char cQuote3[] = "^(\"\"\")";
-const char cApost3[] = "^(\'\'\')";
-const char cSpace[] = "^(\\h+)";
-const char cBareKey[] = "^([-A-Z_a-z0-9]+)";
+const char cQuote3[] = "(\"\"\")";
+const char cApost3[] = "(\'\'\')";
+const char cSpace[] = "(\\h+)";
+const char cBareKey[] = "([-A-Z_a-z0-9]+)";
 
-const char cEscapedChar[] = "^(\\\\(n|t|r|f|b|\\\"|\\\\|u[0-9A-Fa-f]{4,4}|U[0-9A-Fa-f]{8,8}))";
-const char cNoEscape[] = "^([^\\x{0}-\\x{19}\\x{22}\\x{5C}]+)";
-const char cLitString[] = "^([^\\x{0}-\\x{19}\\x{27}]+)";
+const char cEscapedChar[] = "(\\\\(n|t|r|f|b|\\\"|\\\\|u[0-9A-Fa-f]{4,4}|U[0-9A-Fa-f]{8,8}))";
+const char cNoEscape[] = "([^\\x{0}-\\x{19}\\x{22}\\x{5C}]+)";
+const char cLitString[] = "([^\\x{0}-\\x{19}\\x{27}]+)";
 
-const char cAnyValue[] = "^([^\\s\\]\\},]+)";
-const char cSpacedEqual[] = "^(\\h*=\\h*)";
-const char cCommentStuff[] = "^(\\V*)";
-const char cHashComment[] = "^(\\h*#\\V*|\\h*)";
+const char cAnyValue[] = "([^\\s\\]\\},]+)";
+const char cSpacedEqual[] = "(\\h*=\\h*)";
+const char cCommentStuff[] = "(\\V*)";
+const char cHashComment[] = "(\\h*#\\V*|\\h*)";
 
-const char cDig_Dig[] = "^([^\\d]_[^\\d])|(_$)";
-//const char cNo_0Digit = "^(0\\d+)";
+const char cDig_Dig[] = "([^\\d]_[^\\d])|(_$)";
+const char cNo_0Digit[] = "(0\\d+)";
 const char cFloat_E[] = "([^\\d]_[^\\d])|_[eE]|[eE]_|(_$)";
 
 
@@ -87,26 +89,24 @@ static int toml_lstr_exp[] = {tom_LitString, 0};
 static int toml_mlstr_exp[] = {tom_LitString, tom_Apost3, 0};
 
 
-typedef struct  _toml_token {
-	uint64_t        start; // start of string segment
-	uint64_t        end;   // one plus last character
 
+typedef struct _toml_stream {
+	zval            value; // string of current token
+	zval            subpats; // one or more from preg_match
+	int             start;
+	int             end;   // view of zend_string* old
 	uint64_t        id;
 	uint64_t        line;
 	int        		is_single;
-	char32_t   		ucp;
+	char32_t   		code;
+	int             error;
+	zend_string*    errorMsg;
 
-}
-toml_token;
-
-
-typedef struct _toml_stream {
-	toml_token*     token;
-	zval*           shold;
+	zend_string*   	hold; // s
 	char*		    sptr;
 	uint64_t		slen;
 	uint64_t	    index;
-
+	int             lineBegin;
 	int           	unknownid;
 	int           	eolid;
 	int           	eosid;
@@ -115,7 +115,7 @@ typedef struct _toml_stream {
 	int*			expSet;
 
 	//  regular expression strings by enum
-	HashTable*		regx;
+	HashTable*		map;
 	// 	build up parsed data		
 	HashTable*		root;
 	HashTable*		table;
@@ -123,180 +123,157 @@ typedef struct _toml_stream {
 toml_stream;
 
 
+/** forwards declarations */
 
-
-toml_token* 
-init_toml_token(toml_token* tt) {
-
-	tt->start = 0;
-	tt->end = 0;
-	tt->id = 0;
-	tt->line = 0;
-	tt->is_single = 0;
-	tt->ucp = INVALID_CHAR;	
-
-	return tt;
-}
-
-toml_token* 
-create_toml_token()
-{
-	return init_toml_token((toml_token*)emalloc(sizeof(toml_token)));
-}
-
-typedef garray token_array;
-
-static void init_toml_tokens(p_garray oo, long from, long to) {
-	toml_token** begin = (toml_token**) oo->head.elements + from;
-	toml_token** end = (toml_token**) oo->head.elements + to;
-	while (begin != end) {
-		 *begin = NULL;
-		 begin++;
-	}
-
-}
-
-
-
-static void copy_toml_tokens
- (p_garray oo, long offset, p_garray pp, long begin, long end)
-{
-	toml_token** to = (toml_token**) oo->head.elements + offset;
-	toml_token** bgp = (toml_token**) pp->head.elements + begin;
-	toml_token** ep = (toml_token**) pp->head.elements + end;
-
-	while (bgp != ep) {
-		*to++ = *bgp++;
-	}
-}
-
-
-
-token_array*
-new_array_token(token_array* ta) {
-	gen_array_fntab* tab = emalloc(sizeof(gen_array_fntab));
-
-	tab->esize = sizeof(toml_token*);
-	tab->ename = "toml_token";
-	tab->ctdt = 0;
-	tab->etype = 100;
-	tab->init_elems = init_toml_tokens;
-	tab->dtor_elems = NULL;
-	tab->copy_elems = copy_toml_tokens;
-
-	ta->fntab = tab;
-
-	return ta;
-}
-
-inline toml_token** token_array_elem(token_array* ta, long ix)
-{
-	return ((toml_token**)ta->head.elements + ix);
-}
-
-toml_token* 
-token_push_back(token_array* ta, toml_token* tt) {
-	long offset = ta->head.size;
-	gen_resize(ta, offset+1);
-	*token_array_elem(ta,offset) = tt;
-	return  tt;
-}
-
+int ts_single_match(char32_t c);
 /**
  * Fetch without updating the streams index
  */
-int ts_peekChar(const toml_stream* ts, toml_token* tt) {
-	int64_t 	remains = ts->slen - ts->index;
+int 
+ts_peekChar(toml_stream* oo)  {
+	int64_t 	remains = oo->slen - oo->index;
 	uint64_t 	ch_size;
 
 	if (remains > 0) {
-		ch_size = ucode8Fore(ts->sptr + ts->index, remains, &tt->ucp);
-		if (tt->ucp != INVALID_CHAR) {
-			tt->start = ts->index;
-			tt->end = tt->start + ch_size;
+		ch_size = ucode8Fore(oo->sptr + oo->index, remains, &oo->code);
+		if (oo->code != INVALID_CHAR) {
+			oo->start = oo->index;
+			oo->end = oo->start + ch_size;
 			return ch_size;
 		}
 	}
-	tt->id = tom_EOS;
-	tt->is_single = 1;
-	tt->start = tt->end;
+	oo->id = tom_EOS;
+	oo->is_single = 1;
+	oo->start = oo->index;
+	oo->end = oo->index;
 	return 0;
 }
 
-void ts_checkLineFeed(toml_stream* oo, toml_token* tt) {
-	if (tt->ucp == 13) {
+
+void ts_checkLF(toml_stream* oo) {
+	if (oo->code == 13) {
 		oo->index += 1;
-		ts_peekChar(oo,tt);
+		ts_peekChar(oo);
 	}
-	if (tt->ucp == 10) {
+	if (oo->code == 10) {
 		oo->flagLF = true;
-		tt->id = oo->eolid;
-		tt->line = oo->tokenLine;
-		tt->is_single = true;
+		oo->id = tom_NewLine;
+		oo->line = oo->tokenLine;
+		oo->is_single = true;
+		oo->lineBegin = oo->index + 1;
 		return;
 	}
-	zend_throw_exception_ex(phiz_ce_RuntimeException, 0,
-			"Invalid in Toml checkLineFeed %ld", (long)tt->ucp);
+	oo->error = 1;
+	oo->errorMsg = strpprintf(0,"Invalid character ts_checkLF %lx", (long)oo->code );
 }
 
+
+int ts_peekToken(toml_stream* oo) {
+	int fit;
+	int csize = ts_peekChar(oo);
+	if (csize == 0) {
+		oo->line = oo->tokenLine;
+	}
+	else if (oo->code < 20) {
+		ts_checkLF(oo);
+	}
+	else {
+		oo->line = oo->tokenLine;
+		oo->is_single = 0;
+		if (csize == 1) {
+			fit = ts_single_match(oo->code);
+			if (fit) {
+				oo->id = fit;
+				oo->is_single = 1;
+			}
+			else {
+				oo->id = tom_EOS;
+			}
+		}
+		else {
+			oo->id = tom_EOS;
+		}
+	}
+	oo->line = oo->tokenLine;
+	if (oo->error) {
+		return 0;
+	}
+	else {
+		return oo->id;
+	}
+}
 
 int ts_firstMatch(toml_stream* oo) {
 	int* expSet = oo->expSet;
 	zval *pzval;
 	int  exp_index;
 	pcre_cache_entry* entry;
-	zval  retval;
 	zval  matches;
+	zval  retval;
+
 	ZVAL_NULL(&retval);
 
 	while(exp_index = *expSet++) {
 
-		pzval = zend_hash_index_find(oo->regx, exp_index);
+		pzval = zend_hash_index_find(oo->map, exp_index);
 		if (zval_get_type(pzval) != IS_STRING) { // TODO:DEBUG
-			zend_throw_exception_ex(phiz_ce_RuntimeException, 0,
-			"Invalid expression index %ld", (long)exp_index);
+			oo->error = 1;
+			oo->errorMsg = strpprintf(0, "Invalid expression index %ld", (long)exp_index);
+			return 0;
 		}
 
 		entry = pcre_get_compiled_regex_cache(Z_STR_P(pzval));
-		ZVAL_NULL(&matches);
+		Z_TRY_DELREF(oo->subpats);
+		ZVAL_NULL(&oo->subpats);
 
-		php_pcre_match_impl(entry, Z_STR_P(oo->shold), &retval, &matches, 
-			/*global*/ 0, 1, PREG_START_LEN_OFFSET, oo->index);
+		php_pcre_match_impl(entry, oo->hold, &retval, &oo->subpats, 
+			/*global*/ 0, /* use flags */ 1, /* flags */0, /* offset */ oo->index);
 		
-		Z_TRY_DELREF(matches);
-
-
+		if ((Z_TYPE(oo->subpats) == IS_ARRAY)&& zend_array_count(Z_ARR(oo->subpats)) > 1) {
+			return exp_index;
+		}
 	}
+	return 0;
 }
 /**
  * Set the resident token, and update index
  */
-int ts_moveNextId(toml_stream* oo) {
+int ts_moveNext(toml_stream* oo) {
 	uint64_t ch_size;
-	uint64_t match_id;
+	int 	 match_id;
+	int      flen;
+	zval*    find;
 
-	toml_token* tok = oo->token;
 	if (oo->flagLF) {
 		oo->flagLF = 0;
 		oo->tokenLine += 1;
-		tok->line = oo->tokenLine;
+		oo->line = oo->tokenLine;
 	}
 
-	ch_size = ts_peekChar(oo,tok);
+	ch_size = ts_peekChar(oo);
 	if (ch_size==0) {
-		tok->id = tom_EOS;
+		oo->id = tom_EOS;
 	}
-	else if (tok->ucp < 20) {
-		ts_checkLineFeed(oo, tok);
+	else if (oo->code < 20) {
+		ts_checkLF(oo);
 		oo->index++;
 	}
 	else {
 		match_id = ts_firstMatch(oo);
+		if (match_id > 0) {
+			oo->id = match_id;
+			find = zend_hash_index_find(Z_ARR(oo->subpats),1);
+			ZVAL_COPY(&oo->value, find);
+			flen = ZSTR_LEN(Z_STR(oo->value));
+			/* all captures from first character */
+			oo->start = oo->index;
+			oo->end = oo->index + flen;
+		}
 	}
 }
 
 // return token id for short list of single ASCII/unicode values
-int64_t toml_singles_table(char32_t c) {
+int ts_single_match(char32_t c) {
 	switch(c) {
 		case '=': return tom_Equal;
 		case '[': return tom_LSquare;
@@ -317,6 +294,17 @@ int64_t toml_singles_table(char32_t c) {
 	}
 }
 
+static zend_string* wrap_expr_str(const char* expr)
+{
+	smart_str	  cstr = {0};
+
+	smart_str_appendl(&cstr,"/\\G",3);
+	smart_str_appends(&cstr, expr);
+	smart_str_appendl(&cstr,"/u",2);
+	smart_str_0(&cstr);
+	return cstr.s;
+}
+
 HashTable* toml_make_regx_table()
 {
 	HashTable* re = zend_new_array(tom_AnyChar);
@@ -324,51 +312,61 @@ HashTable* toml_make_regx_table()
 	zval tmp;
 	ZVAL_ARR(&tmp,re);
 
-	add_index_string(&tmp, tom_Bool, cRexBool);
-	add_index_string(&tmp, tom_DateTime, cDateTime);
-	add_index_string(&tmp, tom_FloatExp, cFloatExp);
-	add_index_string(&tmp, tom_FloatDot, cFloatDot);
-	add_index_string(&tmp, tom_Integer, cInteger);
 
-	add_index_string(&tmp, tom_Quote3, cQuote3);
-	add_index_string(&tmp, tom_Apost3, cApost3);
-	add_index_string(&tmp, tom_Space, cSpace);
-	add_index_string(&tmp, tom_BareKey, cBareKey);
+	add_index_str(&tmp, tom_Bool, wrap_expr_str(cRexBool));
+	add_index_str(&tmp, tom_DateTime, wrap_expr_str(cDateTime));
+	add_index_str(&tmp, tom_FloatExp, wrap_expr_str(cFloatExp));
+	add_index_str(&tmp, tom_FloatDot, wrap_expr_str(cFloatDot));
+	add_index_str(&tmp, tom_Integer, wrap_expr_str(cInteger));
 
-	add_index_string(&tmp, tom_EscapedChar, cEscapedChar);
-	add_index_string(&tmp, tom_NoEscape, cNoEscape);
-	add_index_string(&tmp, tom_LitString, cLitString);
+	add_index_str(&tmp, tom_Quote3, wrap_expr_str(cQuote3));
+	add_index_str(&tmp, tom_Apost3, wrap_expr_str(cApost3));
+	add_index_str(&tmp, tom_Space, wrap_expr_str(cSpace));
+	add_index_str(&tmp, tom_BareKey, wrap_expr_str(cBareKey));
 
-	add_index_string(&tmp, tom_AnyValue, cAnyValue);
-	add_index_string(&tmp, tom_SpacedEqual, cSpacedEqual);
-	add_index_string(&tmp, tom_CommentStuff, cCommentStuff);
-	add_index_string(&tmp, tom_HashComment, cHashComment);
+	add_index_str(&tmp, tom_EscapedChar, wrap_expr_str(cEscapedChar));
+	add_index_str(&tmp, tom_NoEscape, wrap_expr_str(cNoEscape));
+	add_index_str(&tmp, tom_LitString, wrap_expr_str(cLitString));
 
-	add_index_string(&tmp, tom_Dig_Dig, cDig_Dig);
-	add_index_string(&tmp, tom_Float_E, cFloat_E);
+	add_index_str(&tmp, tom_AnyValue, wrap_expr_str(cAnyValue));
+	add_index_str(&tmp, tom_SpacedEqual, wrap_expr_str(cSpacedEqual));
+	add_index_str(&tmp, tom_CommentStuff, wrap_expr_str(cCommentStuff));
+	add_index_str(&tmp, tom_HashComment, wrap_expr_str(cHashComment));
+
+	add_index_str(&tmp, tom_Dig_Dig, wrap_expr_str(cDig_Dig));
+	add_index_str(&tmp, tom_Float_E, wrap_expr_str(cFloat_E));
 
 	return re;
 }
 
-HashTable*
- 	toml_stream_parse(toml_stream* ts, zval* str)
+HashTable* toml_stream_parse(zval* str)
 {
-	//ZVAL_COPY_VALUE(&ts->shold, str); // no inc ref counter
-	ts->shold = str;
-	ts->sptr = Z_STRVAL_P(str);
-	ts->slen = Z_STRLEN_P(str);
-	ts->flagLF = 0;
-	ts->index = 0;
-	ts->eosid = tom_EOS;
-	ts->eolid = tom_NewLine;
-	ts->unknownid = tom_AnyChar;
-	ts->tokenLine = 0;
-	ts->token = create_toml_token();
-	ts->root = zend_new_array(4); 
-	ts->table = ts->root;
-	ts->expSet = toml_key_exp;
+	//ZVAL_COPY_VALUE(&ts->hold, str); // no inc ref counter
 
-	ts->regx = toml_make_regx_table();
+	toml_stream ts;
+
+	ZVAL_NULL(&ts.value);
+	ZVAL_NULL(&ts.subpats);
+	ts.start = 0;
+	ts.end = 0;
+	ts.id = 0;
+	ts.is_single = 0;
+	ts.code = 0;
+	ts.error = 0;
+	ts.errorMsg = NULL;
+	ts.index = 0;
+	ts.lineBegin = 0;
+	ts.flagLF = 0;
+	
+	ts.tokenLine = 0;
+
+	ts.hold = Z_STR_P(str);
+	ts.sptr = Z_STRVAL_P(str);
+	ts.slen = Z_STRLEN_P(str);
+	ts.expSet = toml_key_exp;
+	ts.map = toml_make_regx_table();
+	ts.root = zend_new_array(4); 
+	ts.table = ts.root;
 
 }
 

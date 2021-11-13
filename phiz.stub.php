@@ -15,5 +15,5 @@ function str_uncamel(string $s, string $seperate = "_"): string {}
 function str_utf8c(string $s, int $offset, int& $code) : string {};
 
 
-function toml_parse(string $s): array {}
+
 

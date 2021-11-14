@@ -152,3 +152,28 @@ utf32_str8(char32_t d, char (*result) [8])
         return 4;
     }
 }
+
+typedef struct _ret_char_buf {
+    char str[32];
+    int  slen;
+}
+ret_char_buf;
+
+/* convert string of hexadecimal characters to a
+   single unicode character. Return length */
+int  
+hex_str8(const char *data, int slen, char (*result) [8])
+{
+    char buf[24];
+
+    // copy to terminate
+    for(size_t i = 0; i < slen; i++) {
+        buf[i] = *data++;
+    }
+    buf[slen] = '\0';
+
+    char32_t val = (char32_t) strtol(buf, 0, 16);
+    
+    //Php::out << val << " is " << ec8.result << std::endl;
+    return utf32_str8(val, result);
+}

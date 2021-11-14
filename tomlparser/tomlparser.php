@@ -61,8 +61,7 @@ class TomlParser
     protected string $int_exp;
     protected string $float_exp;
     protected string $float_dot;
-    
-    protected array $estack = [];
+
     // current token
     public string $value;
     public int $code; // values at the start of the match;
@@ -223,7 +222,7 @@ class TomlParser
             $this->index++;
         } else {
             [$id, $capture] = $this->firstMatch();
-            if ($id > 0 && count($capture) > 1) {
+            if ($id > 0) {
                 $this->id = $id;
                 $this->value = $capture[1];
                 $this->isSingle = false;
@@ -285,20 +284,6 @@ class TomlParser
         return str_replace('_', '', $s);
     }
 
-    function popExpSet()
-    {
-        if (!empty($this->estack)) {
-            $this->expSet = array_pop($this->estack);
-        } else {
-            $this->syntaxError("Expression stack error");
-        }
-    }
-
-    function pushExpSet(array $set)
-    {
-        $this->estack[] = $this->expSet;
-        $this->expSet = $set;
-    }
 
     function escape_string(string $s): string
     {
@@ -965,7 +950,9 @@ class TomlParser
 
     function mlqString(): string
     {
-        $this->pushExpSet($this->ml_exp);
+        $oldExpSet = $this->expSet;
+        $this->expSet = $this->ml_exp;
+
         $id = $this->moveNext();
 
         if ($id === self::tom_NewLine) {
@@ -1006,13 +993,14 @@ class TomlParser
                     break;
             }
         }
-        $this->popExpSet();
+        $this->expSet = $oldExpSet;
         return $ret;
     }
 
     function quoteStr(): string
     {
-        $this->pushExpSet($this->estr_exp);
+        $oldExpSet = $this->expSet;
+        $this->expSet = $this->estr_exp;
         $ret = '';
         $id = $this->moveNext();
 
@@ -1026,7 +1014,7 @@ class TomlParser
             }
             $id = $this->moveNext();
         }
-        $this->popExpSet();
+        $this->expSet = $oldExpSet;
         return $ret;
     }
 

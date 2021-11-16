@@ -625,7 +625,7 @@ class TomlParser
         $dotCount = 0;
         $aotLength = 0;
         $path_ref = &$this->root;
-        $lastAOT = null;
+
         $id = $this->moveNext();
         $inloop = true;
         $parts_ct = 0;
@@ -681,13 +681,7 @@ class TomlParser
 
 
                     $part_key = $this->keyName();
-                    $leaf = "[" . $part_key . "]";
-
-                    if (strlen($path) > 0) {
-                        $path = $path . $leaf;
-                    } else {
-                        $path = $leaf;
-                    }
+                    $path = $path . "[" . $part_key . "]";
                     
                     if (($dotCount < 1) && ($parts_ct > 0)) {
                         $this->syntaxError("Expected a '.' after path part");
@@ -707,16 +701,15 @@ class TomlParser
                         $tag = $this->table_parts[$path];
                         if ($tag->aot) {
                             $aotLength++;
-                            $lastAOT = $tag;
+                            //$lastAOT = $tag;
                             if (!$tag->implicit) {
                                 $path_ref = &$tag->endRef();
                             }
                         }
                     } else {
                         // make new branch
-                        if (!$hitNew) {
-                            $hitNew = true;
-                        }
+                        $hitNew = true;
+
                         // first branch declaration has to be correct
                         if ($isAOT) {
                             $aotLength++;
@@ -725,7 +718,7 @@ class TomlParser
                         $path_ref[$part_key] = [];
                         $path_ref = &$path_ref[$part_key];
                         $tag = new TomPartTag();
-                        $tag->part = $part_key;
+
                         $tag->aot = $isAOT;
                         $tag->implicit = true;
                         $tag->n = 0;
@@ -938,7 +931,7 @@ class TomlParser
         $match = null;
         $ct = preg_match($this->map[self::tom_Float_E], $s, $match);
         if (ct > 0) {
-            $this->valueError("Invalid float with exponent: Underscore must be between digits", $s);
+            $this->valueError("Invalid float: Underscore must be between digits", $s);
         }
         $s = str_replace('_', '', $s);
         $ct = preg_match($this->map[self::tom_No_0Digit], $s, $match);
@@ -1048,8 +1041,6 @@ class TomlParser
 
 class TomPartTag
 {
-
-    public string $part;
     public array $base;
     public int $n; // number of indexed arrays
     public bool $aot;
@@ -1068,22 +1059,5 @@ class TomPartTag
         return $this->base[$ct];
     }
 
-    function name(bool $withIndex): string
-    {
-
-        /* $ret = '';
-         * if ($this->aot) {
-          $ret .= "[" . $this->part;
-          if ($withIndex) {
-          $ret .= "/" . count($this->base);
-          }
-          $ret .= "]";
-          } else {
-          $ret .= "{" . $this->part . "}";
-          }
-         * 
-         */
-        return "[" . $this->part . "]";
-    }
 
 }

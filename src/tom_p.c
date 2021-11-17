@@ -8,6 +8,9 @@
 #include "ext/pcre/php_pcre.h"
 #include <zend_smart_str.h>
 
+#ifndef PHIZ_TOMP_H
+#include "tom_p.h"
+#endif
 
 #define PREG_START_LEN_OFFSET       (1<<10)
 
@@ -99,39 +102,9 @@ tom_part_tag;
 
 HashTable* tag_part_endRef(tom_part_tag* ptag);
 HashTable* tag_part_newRef(tom_part_tag* ptag);
+zend_string* str_del_char(zend_string* src, char delme, bool* changed );
 
 
-typedef struct _toml_stream {
-	zend_string		*value; // string of current token
-	uint64_t		start;  // view of current parse
-	uint64_t        end; 
-	zval            subpats; // captures from preg_match
-	uint64_t        id;
-	uint64_t        line;
-	int        		is_single;
-	char32_t   		code;
-	int             error;
-	zend_string*    errorMsg;
-	zend_string*   	hold; // s
-	char*		    sptr;
-	uint64_t		slen;
-	uint64_t	    index;
-	int             lineBegin;
-	int           	unknownid;
-	int           	eolid;
-	int           	eosid;
-	int           	tokenLine;
-	int           	flagLF;
-	int*            expSet;
-
-	//  regular expression strings by enum
-	HashTable*		map;
-	// 	build up parsed data		
-	HashTable*		root;
-	HashTable*		table;
-	HashTable*      table_parts;
-}
-toml_stream;
 
 
 /** forwards declarations */
@@ -226,8 +199,12 @@ int ts_peekToken(toml_stream* oo) {
 int ts_str_captures(toml_stream* oo, zend_string* expr, zend_string* alt)
 {
 	zval  retval;
-	pcre_cache_entry* entry = pcre_get_compiled_regex_cache(expr);
-	Z_TRY_DELREF(oo->subpats);
+	
+
+	if (Z_TYPE(oo->subpats) != IS_NULL) {
+		//printf("captures delref %d\n", Z_REFCOUNT(oo->subpats));
+		zend_hash_release(Z_ARR(oo->subpats));
+    }
 	ZVAL_NULL(&oo->subpats);
 
 	ZVAL_NULL(&retval);
@@ -236,19 +213,24 @@ int ts_str_captures(toml_stream* oo, zend_string* expr, zend_string* alt)
 	long         offset;
 
 	if (alt) {
-		src = alt
+		src = alt;
 		offset = 0;
 	}
 	else {
 		src = oo->hold;
 		offset = oo->index;
 	}
+
+	pcre_cache_entry* entry = pcre_get_compiled_regex_cache(expr);
+
 	php_pcre_match_impl(entry, src, &retval, &oo->subpats, 
 		/*global*/ 0, /*use flags*/ 1, /*flags*/0, 
 		/*offset*/ offset);
-	
+
 	if (Z_TYPE(oo->subpats) == IS_ARRAY) {
-		return zend_array_count(Z_ARR(oo->subpats));
+		int count = zend_array_count(Z_ARR(oo->subpats));
+		printf("%d captures created %d %lx\n",count, Z_REFCOUNT(oo->subpats), Z_ARR(oo->subpats));
+		return count;
 	}
 	return 0;
 }
@@ -280,19 +262,17 @@ int ts_firstMatch(toml_stream* oo) {
 /**
  * Force a zend string from last character lookup
  */
-int ts_string_zend(toml_stream* oo, zend_string **ret) {
-	smart_str zstr = {0};
-	int slen = oo->end - oo->start;
-	if ((slen) > 0) {
-		smart_str_appendl(&zstr, oo->sptr + oo->start, slen);
-	}
-	smart_str_0(&zstr);
-	(*ret) = zstr.s;
-}
+
 
 void ts_assign_value(toml_stream* oo, zend_string* val) {
+	printf("value release = %d\n", oo->value->gc);
 	zend_string_release(oo->value);
-	oo->value = zend_string_copy(val);
+	if (!ZSTR_IS_INTERNED(val)) {
+		oo->value = zend_string_copy(val);
+	}
+	else {
+		oo->value = val;
+	}
 }
 
 void ts_doneToken(toml_stream* oo)
@@ -401,49 +381,54 @@ void ts_value_error(toml_stream* oo, char* msg, zend_string* src) {
 }
 
 
-void ts_float_dot(toml_stream* oo, zend_string* src, zend_string** ret) {
+bool ts_float_dot(toml_stream* oo, zend_string* src, zend_string** ret) {
 	// continue from subpats
-	HashTable* h = ZARR(oo->subpats);
+	HashTable* h = Z_ARR(oo->subpats);
 
 	if (zend_array_count(h) < 5) {
 		ts_value_error(oo, "Wierd Float Capture", src);
-		return;
+		return false;
 	}
-	zend_string *pdec = zend_hash_index_find(Z_ARR(oo->subpats),4);
+	zval* find = zend_hash_index_find(Z_ARR(oo->subpats),4);
+	zend_string *pdec = Z_STR_P(find);
 	if (ZSTR_LEN(pdec) <= 1) {
 		ts_value_error(oo, "Float needs > 1 digit after decimal point", src);
-		return;
+		return false;
 	}
 
 	if (ts_expr_captures(oo, tom_Dig_Dig, src))
 	{
 		ts_value_error(oo, "Float underscore must be between digits", src);
-		return;
+		return false;
 	}
-
-	zend_string* stripped = str_del_char(oo->value,'_');
+	bool changed = false;
+	zend_string* stripped = str_del_char(oo->value,'_', &changed);
 	*ret = stripped;
+	return changed;
 }
 
-void ts_float_exp(toml_stream* oo, zend_string* src, zend_string** ret) {
+bool ts_float_exp(toml_stream* oo, zend_string* src, zend_string** ret) {
 	// continue from subpats
 
 	if (ts_expr_captures(oo, tom_Float_E, src)) {
 		ts_value_error(oo, "Invalid float: Underscore must be between digits", src);
-		return;
+		return false;
 	}
 
-	zend_string* strip = str_del_char(src,'_');
+	bool changed = false;
+	zend_string* strip = str_del_char(src,'_', &changed);
+	*ret = strip;
 
 	if (ts_expr_captures(oo, tom_No_0Digit, strip))
 	{
 		ts_value_error(oo, "Leading zero not allowed", src);
-		return;
+		return changed;
 	}
-	*ret = strip;
+	
+	return changed;
 }
 
-zend_string* str_del_char(zend_string* src, char delme )
+zend_string* str_del_char(zend_string* src, char delme, bool* changed)
 {
 	char* sptr = ZSTR_VAL(src);
 	int   slen = ZSTR_LEN(src);
@@ -468,11 +453,13 @@ zend_string* str_del_char(zend_string* src, char delme )
 				bptr++;
 			}
 			smart_str_0(&cstr);
+		*changed = true;
 		return cstr.s;
 	}
-	return zend_string_copy(src);
+	*changed = false;
+	return  src;
 }
-void ts_integer(toml_stream* oo, zend_string* src, zend_string** ret) {
+bool ts_integer(toml_stream* oo, zend_string* src, zend_string** ret) {
 	char* sptr = ZSTR_VAL(src);
 	int   slen = ZSTR_LEN(src);
 	int   change = 0;
@@ -484,10 +471,12 @@ void ts_integer(toml_stream* oo, zend_string* src, zend_string** ret) {
 				 || ((*sptr) == '_') )
 		{
 			ts_value_error(oo, "Integer underscore must be between digits", src);
-			return;
+			return false;
 		}
 	}
-	(*ret) = str_del_char(src,'_');
+	bool changed;
+	*ret = str_del_char(src,'_',&changed);
+	return changed;
 }
 
 /* string contains '\' followed by escaped character specifier */
@@ -938,7 +927,7 @@ void ts_init_ts(toml_stream* oo, zend_string* s) {
 	oo->start = 0;
 	oo->end = 0;
 	// force a valid (empty) zend_string
-	ts_string_zend(oo, &oo->value);
+	oo->value = zend_string_init("", 0, 0);
 	oo->id = 0;
 	oo->is_single = 0;
 	oo->code = 0;
@@ -950,27 +939,51 @@ void ts_init_ts(toml_stream* oo, zend_string* s) {
 	
 	oo->tokenLine = 0;
 
-	oo->hold = s;
-	oo->sptr = ZSTR_VAL(s);
-	oo->slen = ZSTR_LEN(s);
+	if (s) { 
+		oo->hold = zend_string_copy(s);
+		oo->sptr = ZSTR_VAL(s);
+		oo->slen = ZSTR_LEN(s);
+	}
+	else {
+		oo->hold = NULL;
+		oo->sptr = NULL;
+		oo->slen = 0;
+	}
 	oo->expSet = toml_key_exp;
 	oo->map = toml_make_regx_table();
 	oo->root = zend_new_array(4); 
 	oo->table_parts = zend_new_array(4); 
 	oo->table = oo->root;
+
 }
 
 void ts_destroy_ts(toml_stream* oo)
 {
+	printf("Destroy ts\n");
+
+	if (oo->hold) {
+		zend_string_release(oo->hold);
+	}
 	if (oo->value) {
+		printf("value ref = %d\n", oo->value->gc);
 		zend_string_release(oo->value);
 	}
-	Z_TRY_DELREF(oo->subpats);
 
-	zend_hash_release(oo->table_parts);
+	if (Z_TYPE(oo->subpats) != IS_NULL) {
+		zend_hash_release(Z_ARR(oo->subpats));
+		ZVAL_NULL(&oo->subpats);
+	}
+
 	if (oo->root) {
 		zend_hash_release(oo->root);
 	}
+
+	if (oo->error) {
+		if (oo->errorMsg) {
+			zend_string_release(oo->errorMsg);
+		}
+	}
+	zend_hash_release(oo->table_parts);
 	zend_hash_release(oo->map);
 }
 
@@ -1143,16 +1156,20 @@ void ts_table_path(toml_stream* oo)
 
 bool ts_match_integer(toml_stream* oo, zval* ret, bool* partial) 
 {
+	printf("match_integer value ref = %d\n", oo->value->gc);
 	if (ts_expr_captures(oo, tom_Integer, oo->value)) {
+		
 		zval* find = zend_hash_index_find(Z_ARR(oo->subpats),1);
 		zend_string* match = Z_STR_P(find);
 		zend_string* istr;
 		if (ZSTR_LEN(oo->value) == ZSTR_LEN(match)) {
-			ts_integer(oo, match, &istr);
+			bool release = ts_integer(oo, match, &istr);
 			char* endptr;
 			long  decval = strtol(ZSTR_VAL(istr),&endptr,10);
 			ZVAL_LONG(ret, decval);
-			zend_string_release(istr);
+			if (release) {
+				zend_string_release(istr);
+			}
 			return true;
 		}
 		if (!*partial) {
@@ -1169,7 +1186,7 @@ bool ts_match_floatdot(toml_stream* oo, zval* ret, bool* partial)
 		zend_string* match = Z_STR_P(find);
 		zend_string* fstr;
 		if (ZSTR_LEN(oo->value) == ZSTR_LEN(match)) {
-			ts_float_dot(oo, match, fstr);
+			ts_float_dot(oo, match, &fstr);
 			char* endptr;
 			double d = strtod(ZSTR_VAL(fstr),&endptr);
 			zend_string_release(fstr);
@@ -1190,7 +1207,7 @@ bool ts_match_floatexp(toml_stream* oo, zval* ret, bool* partial)
 		zend_string* match = Z_STR_P(find);
 		zend_string* fstr;
 		if (ZSTR_LEN(oo->value) == ZSTR_LEN(match)) {
-			ts_float_exp(oo, match, fstr);
+			ts_float_exp(oo, match, &fstr);
 			char* endptr;
 			double d = strtod(ZSTR_VAL(fstr),&endptr);
 			zend_string_release(fstr);
@@ -1204,7 +1221,7 @@ bool ts_match_floatexp(toml_stream* oo, zval* ret, bool* partial)
 	return false;
 }
 
-void ts_match_bool(toml_stream* oo, zval* ret, bool* partial) 
+bool ts_match_bool(toml_stream* oo, zval* ret, bool* partial) 
 {
 	if (ts_expr_captures(oo, tom_Bool, oo->value)) {
 		zval* find = zend_hash_index_find(Z_ARR(oo->subpats),1);
@@ -1225,20 +1242,43 @@ void ts_match_bool(toml_stream* oo, zval* ret, bool* partial)
 	}
 	return false;
 }
+int call_function_by_ptr(zend_function *fbc, zend_object *obj, zval *retval, uint32_t num_params, zval *params) {
+    zend_fcall_info fci;
+    zend_fcall_info_cache fcc;
 
-void ts_match_datetime(toml_stream* oo, zval* ret, bool* partial) 
+    fci.size = sizeof(fci);
+    fci.object = obj;
+    fci.retval = retval;
+    fci.param_count = num_params;
+    fci.params = params;
+    fci.named_params = NULL;
+    ZVAL_UNDEF(&fci.function_name); // Unused if fcc is provided
+
+
+    fcc.function_handler = fbc;
+    fcc.calling_scope = NULL;       // Appears to be dead
+    fcc.called_scope = obj ? obj->ce : fbc->common.scope;
+    fcc.object = obj;
+
+    return zend_call_function(&fci, &fcc);
+}
+
+bool ts_match_datetime(toml_stream* oo, zval* ret, bool* partial) 
 {
 	if (ts_expr_captures(oo, tom_DateTime, oo->value)) {
 		zval* find = zend_hash_index_find(Z_ARR(oo->subpats),1);
 		zend_string* match = Z_STR_P(find);
 		zend_string* fstr;
 		if (ZSTR_LEN(oo->value) == ZSTR_LEN(match)) {
-			if (strcmp(ZSTR_VAL(oo->value),"true")==0) {
-				ZVAL_TRUE(ret);
+			static zend_string* dtname = NULL;
+			if (dtname == NULL) {
+				dtname = zend_string_init("DateTime", sizeof("DateTime")-1, 1);
 			}
-			else {
-				ZVAL_FALSE(ret);
-			}
+			zend_class_entry *dtentry = zend_lookup_class(dtname);
+			zval obj;
+			object_init_ex(&obj, dtentry);
+			zend_function *ctor = Z_OBJ_HT(obj)->get_constructor(Z_OBJ(obj));
+			int result = call_function_by_ptr(ctor, Z_OBJ(obj), ret, 1, find);
 			return true;
 		}
 		if (!*partial) {

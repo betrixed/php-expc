@@ -14,8 +14,18 @@ class Cregx {
 
     public function clear() : void {}
 
-    public function regexpr(string $exp, int $flags = 0, int $global = 0) : void {}
+    public function setExpr(string $exp, int $flags = 0, int $global = 0) : void {}
 }
 
-
+/** @generate-function-entries */
 function toml_parse(string $subject) : array {}
+
+/** @generate-function-entries */
+class Ctoml {
+
+    public function matchInt(string $s) : int  {}
+    public function matchDateTime(string $s) : DateTime  {}
+    public function matchBool(string $s) : bool  {}
+    public function matchFloatDot(string $s) : double {}
+    public function matchFloatExp(string $s) : double  {}
+}

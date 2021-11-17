@@ -17,7 +17,7 @@
 #include "phiz_cregx.h"
 #include "src/ucode8.h"
 
-extern HashTable* toml_stream_parse(zval *sr);
+extern HashTable* toml_stream_parse(zend_string *src);
 
 ZEND_DECLARE_MODULE_GLOBALS(phiz)
 static PHP_GINIT_FUNCTION(phiz);
@@ -51,6 +51,7 @@ PHP_MINIT_FUNCTION(phiz)
 	PHP_MINIT(phiz_str8)(INIT_FUNC_ARGS_PASSTHRU);
 	PHP_MINIT(phiz_carray)(INIT_FUNC_ARGS_PASSTHRU);
 	PHP_MINIT(phiz_cregx)(INIT_FUNC_ARGS_PASSTHRU);
+	PHP_MINIT(phiz_ctoml)(INIT_FUNC_ARGS_PASSTHRU);
 	return SUCCESS;
 }
 /* }}} */

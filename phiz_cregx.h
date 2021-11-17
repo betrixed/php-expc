@@ -13,6 +13,7 @@
 extern PHPAPI zend_class_entry *phiz_ce_Cregx;
 
 PHP_MINIT_FUNCTION(phiz_cregx);
+PHP_MINIT_FUNCTION(phiz_ctoml);
 
 
 typedef struct _phiz_cregx* pz_cregx;

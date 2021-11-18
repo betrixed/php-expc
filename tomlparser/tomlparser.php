@@ -37,7 +37,9 @@ class TomlParser
     const tom_Dig_Dig = 30;
     const tom_No_0Digit = 31;
     const tom_Time = 32;
-    const tom_AnyChar = 33;
+    const tom_Base = 33;
+    const tom_Nan = 34;
+    const tom_AnyChar = 35;
 
     const PARTIAL = 1;
     const MATCH = 2;
@@ -59,6 +61,8 @@ class TomlParser
     protected array $lstr_exp = [self::tom_LitString];
     protected array $ml_exp = [self::tom_LitString, self::tom_Apost3];
     
+    protected string $base_exp;
+    protected string $nan_exp;
     protected string $int_exp;
     protected string $float_exp;
     protected string $float_dot;
@@ -76,10 +80,12 @@ class TomlParser
         $exp = [
             self::tom_Bool => '(true|false)',
             self::tom_DateTime => '(\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d{6})?(Z|-\d{2}:\d{2})?)?)',
-            self::tom_Time = '(\\d{2}:\\d{2}:\\d{2}(\\.\\d{6})?)',
+            self::tom_Time => '(\\d{2}:\\d{2}:\\d{2}(\\.\\d{6})?)',
             self::tom_FloatExp => '([+-]?((\d_?)+([\.](\d_?)*)?)([eE][+-]?(_?\d_?)+))',
             self::tom_FloatDot => '([+-]?((\d_?)+([\.](\d_?)*)))',
+            self::tom_Nan => '([+-]?inf|[+-]?nan)',
             self::tom_Integer => '([+-]?(\d_?)+)',
+            self::tom_Base => '(0x[0-9A-Fa-f_]+|0o[0-7]+|0b[0-1]+)',
             self::tom_Quote3 => '(\"\"\")',
             self::tom_Apost3 => '(\'\'\')',
             self::tom_Space => '(\h+)',
@@ -92,7 +98,7 @@ class TomlParser
             self::tom_Comment => '(\V*)',
             self::tom_HashComment => '(\h*#\V*|\h*)',
             self::tom_Dig_Dig => '([^\d]_[^\d])|(_\$)',
-            //self::tom_No_0Digit = "^(0\d+)",
+            self::tom_No_0Digit => "(0\d+)",
             self::tom_Float_E => '([^\d]_[^\d])|_[eE]|[eE]_|(_\$)',
 
         ];
@@ -564,6 +570,8 @@ class TomlParser
         $this->int_exp = $this->map[self::tom_Integer];
         $this->float_exp = $this->map[self::tom_FloatExp];
         $this->float_dot = $this->map[self::tom_FloatDot];
+        $this->base_exp = $this->map[self::tom_Base];
+        $this->nan_exp = $this->map[self::tom_Nan] . "i";
     }
     function parse(string $src): array
     {
@@ -779,6 +787,45 @@ class TomlParser
         $this->doneToken();
     }
 
+    function matchNan(string $s, &$mixed) : int 
+    {
+        $match = null;
+        $ct = preg_match($this->nan_exp, $s, $match);
+        if ($ct > 0) {
+            $capture = $match[1];
+            if (strlen($s) === strlen($capture)) {
+                $mixed = floatval($capture);
+                return self::MATCH;
+            }
+            return self::PARTIAL;
+        }
+        return self::FAIL;    
+    }
+    function matchBase(string $s, &$mixed): int {
+        $match = null;
+        $ct = preg_match($this->base_exp, $s, $match);
+        if ($ct > 0) {
+            $capture = $match[1];
+            if (strlen($s) === strlen($capture)) {
+                $base = substr($s,1,1);
+                $val = str_replace('_','',substr($s,2));
+                switch($base) {
+                    case 'x':
+                        $mixed = hexdec($val);
+                        break;
+                    case 'b':
+                        $mixed = bindec($val);
+                        break;
+                    case 'o':
+                        $mixed = octdec($val);
+                        break;
+                }
+                return self::MATCH;
+            }
+            return self::PARTIAL;
+        }
+        return self::FAIL;
+    }
     function matchInt(string $s, &$mixed): int {
         $match = null;
         $ct = preg_match($this->int_exp, $s, $match);
@@ -838,6 +885,22 @@ class TomlParser
         return self::FAIL;
     }
     
+     function matchTime(string $s, &$mixed) : int 
+    {
+        $expr = $this->map[self::tom_Time];
+        $match = null;
+        $ct = preg_match($expr, $s, $match, 0, 0);
+        if ($ct > 0) {
+            $capture = $match[1];
+             if (strlen($s) === strlen($capture)) {
+                $mixed = DateInterval::createFromDateString($capture);
+                return self::MATCH;
+            }
+            return self::PARTIAL;
+        }
+        return self::FAIL;
+    }
+    
     function matchDateTime(string $s, &$mixed) : int 
     {
         $expr = $this->map[self::tom_DateTime];
@@ -881,6 +944,22 @@ class TomlParser
             $value = $this->value;
             $full_value = $value;
             $result = null;
+            $first2 = substr($value,0,2);
+            switch($first2) {
+                case '0x':
+                case '0b':
+                case '0o':
+                    $match = $this->matchBase($value, $result);
+                    if ($match === self::MATCH) {
+                        return $result;
+                    }
+                    else {
+                        throw new Exception("Invalid base number $value");
+                    }
+                default:
+                    break;
+            }
+
             
             $match = $this->matchInt($value,$result);
             if ($match === self::MATCH) {
@@ -914,6 +993,14 @@ class TomlParser
                 $notfull = ($match===self::PARTIAL);
             }
             
+            $match = $this->matchNan($value,$result);
+            if ($match === self::MATCH) {
+                return $result;
+            }
+            else if (!$notfull) {
+                $notfull = ($match===self::PARTIAL);
+            }
+            
             $match = $this->matchDateTime($value, $result);
             if ($match === self::MATCH) {
                 return $result;
@@ -921,7 +1008,13 @@ class TomlParser
             else if (!$notfull) {
                 $notfull = ($match===self::PARTIAL);
             }
-
+            $match = $this->matchTime($value, $result);
+            if ($match === self::MATCH) {
+                return $result;
+            }
+            else if (!$notfull) {
+                $notfull = ($match===self::PARTIAL);
+            }
         }
         if ($notfull) {
             throw new Exception("Cannot fully match: " . $full_value);
@@ -1021,7 +1114,7 @@ class TomlParser
             $this->valueError("Wierd Float Capture", $s);
         }
 
-        if (count($match[4]) <= 1) {
+        if (strlen($match[4]) <= 1) {
             $this->valueError("Float needs at least one digit after decimal point", $s);
         }
         $m2 = null;

@@ -36,7 +36,8 @@ class TomlParser
     const tom_AnyValue = 29;
     const tom_Dig_Dig = 30;
     const tom_No_0Digit = 31;
-    const tom_AnyChar = 32;
+    const tom_Time = 32;
+    const tom_AnyChar = 33;
 
     const PARTIAL = 1;
     const MATCH = 2;
@@ -75,6 +76,7 @@ class TomlParser
         $exp = [
             self::tom_Bool => '(true|false)',
             self::tom_DateTime => '(\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d{6})?(Z|-\d{2}:\d{2})?)?)',
+            self::tom_Time = '(\\d{2}:\\d{2}:\\d{2}(\\.\\d{6})?)',
             self::tom_FloatExp => '([+-]?((\d_?)+([\.](\d_?)*)?)([eE][+-]?(_?\d_?)+))',
             self::tom_FloatDot => '([+-]?((\d_?)+([\.](\d_?)*)))',
             self::tom_Integer => '([+-]?(\d_?)+)',
@@ -92,6 +94,7 @@ class TomlParser
             self::tom_Dig_Dig => '([^\d]_[^\d])|(_\$)',
             //self::tom_No_0Digit = "^(0\d+)",
             self::tom_Float_E => '([^\d]_[^\d])|_[eE]|[eE]_|(_\$)',
+
         ];
 
         $map = [];

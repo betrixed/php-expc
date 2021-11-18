@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 70c722c68b0f0a0de04effc8b70e80665601666c */
+ * Stub hash: beffa7fde40275bbb34f6e9a58f2539e3bda2966 */
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_toml_parse, 0, 1, IS_ARRAY, 0)
 	ZEND_ARG_TYPE_INFO(0, subject, IS_STRING, 0)
@@ -43,7 +43,7 @@ ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Ctoml_matchBool, 0, 1, _IS
 	ZEND_ARG_TYPE_INFO(0, s, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_OBJ_INFO_EX(arginfo_class_Ctoml_matchFloatDot, 0, 1, double, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Ctoml_matchFloatDot, 0, 1, IS_DOUBLE, 0)
 	ZEND_ARG_TYPE_INFO(0, s, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 

@@ -297,25 +297,114 @@ PHP_METHOD(Ctoml, matchInt)
 	bool isPartial = false;
 	toml_stream* oo = &intern->ts;
 	ts_assign_value(oo, subject);
-	printf("subject refct = %d interned=%d\n", subject->gc, ZSTR_IS_INTERNED(subject));
+	//printf("subject refct = %d interned=%d\n", subject->gc, ZSTR_IS_INTERNED(subject));
 	//ZVAL_LONG(return_value,101);
-	ts_match_integer(&intern->ts, return_value, &isPartial);
+	ts_clear_error(oo);
+	if (!ts_match_integer(oo, return_value, &isPartial)) {
+		ts_nomatch_error(oo);
+	}
+	else if (isPartial) {
+		ts_partial_error(oo);
+	}
+	ts_handle_error(oo);
 
 }
 PHP_METHOD(Ctoml, matchBool)
 {
+	zval *object = ZEND_THIS;
+	zend_string*   subject;
 
+	pz_tomp	   intern = Z_PHIZ_TOMP_P(object);
+
+	ZEND_PARSE_PARAMETERS_START(1, 1)
+			Z_PARAM_STR(subject)
+	ZEND_PARSE_PARAMETERS_END();
+	bool isPartial = false;
+	toml_stream* oo = &intern->ts;
+	ts_assign_value(oo, subject);
+	//printf("subject refct = %d interned=%d\n", subject->gc, ZSTR_IS_INTERNED(subject));
+	//ZVAL_LONG(return_value,101);
+	ts_clear_error(oo);
+	if (!ts_match_bool(oo, return_value, &isPartial)) {
+		ts_nomatch_error(oo);
+	}
+	else if (isPartial) {
+		ts_partial_error(oo);
+	}
+	ts_handle_error(oo);
 }
+
 PHP_METHOD(Ctoml, matchDateTime)
 {
+	zval *object = ZEND_THIS;
+	zend_string*   subject;
 
+	pz_tomp	   intern = Z_PHIZ_TOMP_P(object);
+
+	ZEND_PARSE_PARAMETERS_START(1, 1)
+			Z_PARAM_STR(subject)
+	ZEND_PARSE_PARAMETERS_END();
+	bool isPartial = false;
+	toml_stream* oo = &intern->ts;
+	ts_assign_value(oo, subject);
+	//printf("subject refct = %d interned=%d\n", subject->gc, ZSTR_IS_INTERNED(subject));
+	//ZVAL_LONG(return_value,101);
+	ts_clear_error(oo);
+	if (!ts_match_datetime(oo, return_value, &isPartial)) {
+		ts_nomatch_error(oo);
+	}
+	else if (isPartial) {
+		ts_partial_error(oo);
+	}
+	ts_handle_error(oo);
 }
 PHP_METHOD(Ctoml, matchFloatExp)
 {
+	zval *object = ZEND_THIS;
+	zend_string*   subject;
 
+	pz_tomp	   intern = Z_PHIZ_TOMP_P(object);
+
+	ZEND_PARSE_PARAMETERS_START(1, 1)
+			Z_PARAM_STR(subject)
+	ZEND_PARSE_PARAMETERS_END();
+	bool isPartial = false;
+	toml_stream* oo = &intern->ts;
+	ts_assign_value(oo, subject);
+	//printf("subject refct = %d interned=%d\n", subject->gc, ZSTR_IS_INTERNED(subject));
+	//ZVAL_LONG(return_value,101);
+	ts_clear_error(oo);
+	if (!ts_match_floatexp(oo, return_value, &isPartial)) {
+		ts_nomatch_error(oo);
+	}
+	else if (isPartial) {
+		ts_partial_error(oo);
+	}
+	ts_handle_error(oo);
 }
 PHP_METHOD(Ctoml, matchFloatDot)
 {
+	zval *object = ZEND_THIS;
+	zend_string*   subject;
+
+	pz_tomp	   intern = Z_PHIZ_TOMP_P(object);
+
+	ZEND_PARSE_PARAMETERS_START(1, 1)
+			Z_PARAM_STR(subject)
+	ZEND_PARSE_PARAMETERS_END();
+	bool isPartial = false;
+	toml_stream* oo = &intern->ts;
+	ts_assign_value(oo, subject);
+	//printf("subject refct = %d interned=%d\n", subject->gc, ZSTR_IS_INTERNED(subject));
+	//ZVAL_LONG(return_value,101);
+	ts_clear_error(oo);
+	if (!ts_match_floatdot(oo, return_value, &isPartial)) {
+		ts_nomatch_error(oo);
+	}
+	else if (isPartial) {
+		ts_partial_error(oo);
+	}
+	ts_handle_error(oo);
 
 }
 

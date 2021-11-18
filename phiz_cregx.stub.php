@@ -26,6 +26,6 @@ class Ctoml {
     public function matchInt(string $s) : int  {}
     public function matchDateTime(string $s) : DateTime  {}
     public function matchBool(string $s) : bool  {}
-    public function matchFloatDot(string $s) : double {}
-    public function matchFloatExp(string $s) : double  {}
+    public function matchFloatDot(string $s) : float {}
+    public function matchFloatExp(string $s) : float  {}
 }

@@ -16,6 +16,8 @@
 #include "Zend/zend_smart_str.h"
 
 #include "src/tom_p.h"
+#include "src/daytime.h"
+
 
 // ** how otherwise can the refcount be tweaked?
 struct _pcre_cache_entry {
@@ -436,4 +438,72 @@ PHP_MINIT_FUNCTION(phiz_ctoml)
 	phiz_handler_Ctoml.clone_obj = phiz_ctoml_clone;
 	phiz_handler_Ctoml.dtor_obj  = zend_objects_destroy_object;
 	phiz_handler_Ctoml.free_obj  = phiz_ctoml_free_storage;
+}
+
+
+ZEND_FUNCTION(daytime_format) 
+{
+	long 	flags = 0;
+	double  value;
+	zend_string *result;
+
+	ZEND_PARSE_PARAMETERS_START(1, 2)
+	Z_PARAM_DOUBLE(value)
+	Z_PARAM_OPTIONAL
+	Z_PARAM_LONG(flags)
+	ZEND_PARSE_PARAMETERS_END();
+	result = daytime_format(value,flags);
+	ZVAL_STR(return_value, result);
+}
+
+ZEND_FUNCTION(daytime_split)
+{
+	double value;
+	zval   hours;
+	zval   mins;
+	zval   secs;
+
+	ZEND_PARSE_PARAMETERS_START(4, 4)
+	Z_PARAM_DOUBLE(value)
+	Z_PARAM_ZVAL(hours)
+	Z_PARAM_ZVAL(mins)
+	Z_PARAM_ZVAL(secs)
+	ZEND_PARSE_PARAMETERS_END();
+	int h24, m60;
+	double s60;
+
+	daytime_split(value, &h24, &m60, &s60);
+	ZVAL_LONG(hours, h24);
+	ZVAL_LONG(mins, m60);
+	ZVAL_DOUBLE(secs, s60);
+
+}
+
+ZEND_FUNCTION(daytime_set)
+{
+	long hours;
+	long mins;
+	double secs;
+
+	ZEND_PARSE_PARAMETERS_START(3, 3)
+		Z_PARAM_LONG(hours)
+		Z_PARAM_LONG(mins)
+		Z_PARAM_DOUBLE(secs)
+	ZEND_PARSE_PARAMETERS_END();
+
+	daytime_set(hours,mins,secs);	
+}
+
+ZEND_FUNCTION(daytime_str) {
+	char* src;
+	long  slen;
+
+	ZEND_PARSE_PARAMETERS_START(1, 1)
+		Z_PARAM_STRING(src, slen)
+	ZEND_PARSE_PARAMETERS_END();
+
+	error_pad   pad;
+
+	double ret = sto_daytime(src, slen, &pad);
+	ZVAL_DOUBLE(ret);
 }

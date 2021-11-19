@@ -1,5 +1,6 @@
 <?php
 
+require __DIR__ . "/DayTime.php";
 /** test the concepts, with php 8.0+ , especially the regular expressions implementation */
 class TomlParser
 {
@@ -80,7 +81,7 @@ class TomlParser
         $exp = [
             self::tom_Bool => '(true|false)',
             self::tom_DateTime => '(\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d{6})?(Z|-\d{2}:\d{2})?)?)',
-            self::tom_Time => '(\\d{2}:\\d{2}:\\d{2}(\\.\\d{6})?)',
+            self::tom_Time => '(\\d{2}:\\d{2}(:\\d{2})?(\\.\\d+)?)',
             self::tom_FloatExp => '([+-]?((\d_?)+([\.](\d_?)*)?)([eE][+-]?(_?\d_?)+))',
             self::tom_FloatDot => '([+-]?((\d_?)+([\.](\d_?)*)))',
             self::tom_Nan => '([+-]?inf|[+-]?nan)',
@@ -893,7 +894,7 @@ class TomlParser
         if ($ct > 0) {
             $capture = $match[1];
              if (strlen($s) === strlen($capture)) {
-                $mixed = DateInterval::createFromDateString($capture);
+                $mixed =  new DayTime($capture);
                 return self::MATCH;
             }
             return self::PARTIAL;

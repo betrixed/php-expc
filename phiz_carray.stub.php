@@ -52,6 +52,7 @@ class Carray implements  IteratorAggregate, ArrayAccess, Countable {
 
 /** @generate-function-entries */
 class Csu8 implements IteratorAggregate {
+
     public function __construct(string $s) {}
 
     public function __toString() : string {}
@@ -63,6 +64,7 @@ class Csu8 implements IteratorAggregate {
 
    /** @generate-function-entries */
 class Csu32 extends CArray {
+   
     public function __construct(string $s) {}
 
     public function __toString() : string {}

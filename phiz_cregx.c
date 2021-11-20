@@ -30,11 +30,10 @@ struct _pcre_cache_entry {
 };
 
 zend_object_handlers 	phiz_handler_Cregx;
-zend_object_handlers 	phiz_handler_Ctoml;
 
 
 PHPAPI zend_class_entry *phiz_ce_Cregx;
-PHPAPI zend_class_entry *phiz_ce_Ctoml;
+
 
 static void phiz_cregx_copy_ctor( pz_cregx to, pz_cregx from)
 {
@@ -79,66 +78,6 @@ static zend_object *phiz_cregx_new_ex(zend_class_entry *class_type,
 	
 }
 
-static void phiz_ctoml_copy_ctor( pz_tomp to, pz_tomp from)
-{
-
-}
-static zend_object *phiz_ctoml_new_ex(zend_class_entry *class_type,
-									zend_object *orig, bool clone_orig)
-{
-	pz_tomp 		  	   intern;
-	zend_class_entry      *parent = class_type;
-	bool                   inherited = false;
-
-	intern = zend_object_alloc(sizeof(phiz_ctoml), class_type);
-
-	ts_init_ts(&intern->ts, NULL);
-
-	zend_object_std_init(&intern->std, class_type);
-
-	object_properties_init(&intern->std, class_type);
-
-	if (orig && clone_orig) {
-		pz_tomp other = phiz_ctoml_from_obj(orig);
-		phiz_ctoml_copy_ctor(intern, other);
-	}
-	while(parent) {
-		if (parent == phiz_ce_Ctoml) {
-			intern->std.handlers = &phiz_handler_Ctoml;
-			break;
-		}
-		parent = parent->parent;
-		inherited = true;
-	}
-
-	ZEND_ASSERT(parent);
-
-	return &intern->std;
-	
-}
-
-
-static zend_object *phiz_ctoml_new(zend_class_entry *class_type)
-{
-	return phiz_ctoml_new_ex(class_type, NULL, 0);
-}
-
-static void phiz_ctoml_free_storage(zend_object *object)
-{
-	pz_tomp intern = phiz_ctoml_from_obj(object);
-	
-	ts_destroy_ts(&intern->ts);
-	zend_object_std_dtor(&intern->std);
-}
-
-static zend_object *phiz_ctoml_clone(zend_object *old_object)
-{
-	zend_object *new_object = phiz_ctoml_new_ex(old_object->ce, old_object, 1);
-
-	zend_objects_clone_members(new_object, old_object);
-
-	return new_object;
-}
 
 
 static zend_object *phiz_cregx_new(zend_class_entry *class_type)
@@ -286,129 +225,6 @@ PHP_METHOD(Cregx, clear)
 	ZVAL_NULL(return_value);
 
 }
-PHP_METHOD(Ctoml, matchInt)
-{
-	zval *object = ZEND_THIS;
-	zend_string*   subject;
-
-	pz_tomp	   intern = Z_PHIZ_TOMP_P(object);
-
-	ZEND_PARSE_PARAMETERS_START(1, 1)
-			Z_PARAM_STR(subject)
-	ZEND_PARSE_PARAMETERS_END();
-	bool isPartial = false;
-	toml_stream* oo = &intern->ts;
-	ts_assign_value(oo, subject);
-	//printf("subject refct = %d interned=%d\n", subject->gc, ZSTR_IS_INTERNED(subject));
-	//ZVAL_LONG(return_value,101);
-	ts_clear_error(oo);
-	if (!ts_match_integer(oo, return_value, &isPartial)) {
-		ts_nomatch_error(oo);
-	}
-	else if (isPartial) {
-		ts_partial_error(oo);
-	}
-	ts_handle_error(oo);
-
-}
-PHP_METHOD(Ctoml, matchBool)
-{
-	zval *object = ZEND_THIS;
-	zend_string*   subject;
-
-	pz_tomp	   intern = Z_PHIZ_TOMP_P(object);
-
-	ZEND_PARSE_PARAMETERS_START(1, 1)
-			Z_PARAM_STR(subject)
-	ZEND_PARSE_PARAMETERS_END();
-	bool isPartial = false;
-	toml_stream* oo = &intern->ts;
-	ts_assign_value(oo, subject);
-	//printf("subject refct = %d interned=%d\n", subject->gc, ZSTR_IS_INTERNED(subject));
-	//ZVAL_LONG(return_value,101);
-	ts_clear_error(oo);
-	if (!ts_match_bool(oo, return_value, &isPartial)) {
-		ts_nomatch_error(oo);
-	}
-	else if (isPartial) {
-		ts_partial_error(oo);
-	}
-	ts_handle_error(oo);
-}
-
-PHP_METHOD(Ctoml, matchDateTime)
-{
-	zval *object = ZEND_THIS;
-	zend_string*   subject;
-
-	pz_tomp	   intern = Z_PHIZ_TOMP_P(object);
-
-	ZEND_PARSE_PARAMETERS_START(1, 1)
-			Z_PARAM_STR(subject)
-	ZEND_PARSE_PARAMETERS_END();
-	bool isPartial = false;
-	toml_stream* oo = &intern->ts;
-	ts_assign_value(oo, subject);
-	//printf("subject refct = %d interned=%d\n", subject->gc, ZSTR_IS_INTERNED(subject));
-	//ZVAL_LONG(return_value,101);
-	ts_clear_error(oo);
-	if (!ts_match_datetime(oo, return_value, &isPartial)) {
-		ts_nomatch_error(oo);
-	}
-	else if (isPartial) {
-		ts_partial_error(oo);
-	}
-	ts_handle_error(oo);
-}
-PHP_METHOD(Ctoml, matchFloatExp)
-{
-	zval *object = ZEND_THIS;
-	zend_string*   subject;
-
-	pz_tomp	   intern = Z_PHIZ_TOMP_P(object);
-
-	ZEND_PARSE_PARAMETERS_START(1, 1)
-			Z_PARAM_STR(subject)
-	ZEND_PARSE_PARAMETERS_END();
-	bool isPartial = false;
-	toml_stream* oo = &intern->ts;
-	ts_assign_value(oo, subject);
-	//printf("subject refct = %d interned=%d\n", subject->gc, ZSTR_IS_INTERNED(subject));
-	//ZVAL_LONG(return_value,101);
-	ts_clear_error(oo);
-	if (!ts_match_floatexp(oo, return_value, &isPartial)) {
-		ts_nomatch_error(oo);
-	}
-	else if (isPartial) {
-		ts_partial_error(oo);
-	}
-	ts_handle_error(oo);
-}
-PHP_METHOD(Ctoml, matchFloatDot)
-{
-	zval *object = ZEND_THIS;
-	zend_string*   subject;
-
-	pz_tomp	   intern = Z_PHIZ_TOMP_P(object);
-
-	ZEND_PARSE_PARAMETERS_START(1, 1)
-			Z_PARAM_STR(subject)
-	ZEND_PARSE_PARAMETERS_END();
-	bool isPartial = false;
-	toml_stream* oo = &intern->ts;
-	ts_assign_value(oo, subject);
-	//printf("subject refct = %d interned=%d\n", subject->gc, ZSTR_IS_INTERNED(subject));
-	//ZVAL_LONG(return_value,101);
-	ts_clear_error(oo);
-	if (!ts_match_floatdot(oo, return_value, &isPartial)) {
-		ts_nomatch_error(oo);
-	}
-	else if (isPartial) {
-		ts_partial_error(oo);
-	}
-	ts_handle_error(oo);
-
-}
 
 
 PHP_MINIT_FUNCTION(phiz_cregx)
@@ -425,85 +241,6 @@ PHP_MINIT_FUNCTION(phiz_cregx)
 	phiz_handler_Cregx.free_obj  = phiz_cregx_free_storage;
 }
 
-PHP_MINIT_FUNCTION(phiz_ctoml)
-{
-	phiz_register_std_class(&phiz_ce_Ctoml, "Ctoml", class_Ctoml_methods);
-
-	phiz_ce_Ctoml->create_object = phiz_ctoml_new;
 
 
-	memcpy(&phiz_handler_Ctoml, &std_object_handlers, sizeof(zend_object_handlers));
 
-	phiz_handler_Ctoml.offset = XtOffsetOf(phiz_ctoml, std);
-	phiz_handler_Ctoml.clone_obj = phiz_ctoml_clone;
-	phiz_handler_Ctoml.dtor_obj  = zend_objects_destroy_object;
-	phiz_handler_Ctoml.free_obj  = phiz_ctoml_free_storage;
-}
-
-
-ZEND_FUNCTION(daytime_format) 
-{
-	long 	flags = 0;
-	double  value;
-	zend_string *result;
-
-	ZEND_PARSE_PARAMETERS_START(1, 2)
-	Z_PARAM_DOUBLE(value)
-	Z_PARAM_OPTIONAL
-	Z_PARAM_LONG(flags)
-	ZEND_PARSE_PARAMETERS_END();
-	result = daytime_format(value,flags);
-	ZVAL_STR(return_value, result);
-}
-
-ZEND_FUNCTION(daytime_split)
-{
-	double value;
-	zval   hours;
-	zval   mins;
-	zval   secs;
-
-	ZEND_PARSE_PARAMETERS_START(4, 4)
-	Z_PARAM_DOUBLE(value)
-	Z_PARAM_ZVAL(hours)
-	Z_PARAM_ZVAL(mins)
-	Z_PARAM_ZVAL(secs)
-	ZEND_PARSE_PARAMETERS_END();
-	int h24, m60;
-	double s60;
-
-	daytime_split(value, &h24, &m60, &s60);
-	ZVAL_LONG(hours, h24);
-	ZVAL_LONG(mins, m60);
-	ZVAL_DOUBLE(secs, s60);
-
-}
-
-ZEND_FUNCTION(daytime_set)
-{
-	long hours;
-	long mins;
-	double secs;
-
-	ZEND_PARSE_PARAMETERS_START(3, 3)
-		Z_PARAM_LONG(hours)
-		Z_PARAM_LONG(mins)
-		Z_PARAM_DOUBLE(secs)
-	ZEND_PARSE_PARAMETERS_END();
-
-	daytime_set(hours,mins,secs);	
-}
-
-ZEND_FUNCTION(daytime_str) {
-	char* src;
-	long  slen;
-
-	ZEND_PARSE_PARAMETERS_START(1, 1)
-		Z_PARAM_STRING(src, slen)
-	ZEND_PARSE_PARAMETERS_END();
-
-	error_pad   pad;
-
-	double ret = sto_daytime(src, slen, &pad);
-	ZVAL_DOUBLE(ret);
-}

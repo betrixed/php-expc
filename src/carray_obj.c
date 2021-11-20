@@ -176,12 +176,6 @@ static zval *carray_quickit_get_current_data(zend_object_iterator *iter)
 	carray_quickit     *iterator = (carray_quickit*)iter;
 	pz_carray object   = Z_PHIZ_CARRAY_P(&iter->data);
 
-	//zindex = iterator->current;
-	/* if (zindex < 0 || zindex >= object->cobj.size) {
-		zend_throw_exception(phiz_ce_RuntimeException, "Index invalid or out of range", 0);
-		return NULL;
-	}
-	*/
 	p_carray_obj pobj = &object->cobj;
 
 	return pobj->zntab->get_zval(pobj,iterator->current,&iterator->result);

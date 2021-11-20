@@ -16,6 +16,9 @@
 #include "phiz_carray.h"
 #include "phiz_cregx.h"
 #include "src/ucode8.h"
+#include "phiz_daytime.h"
+#include "daytime_arginfo.h"
+#include "phiz_ctoml.h"
 
 extern HashTable* toml_stream_parse(zend_string *src);
 
@@ -52,6 +55,7 @@ PHP_MINIT_FUNCTION(phiz)
 	PHP_MINIT(phiz_carray)(INIT_FUNC_ARGS_PASSTHRU);
 	PHP_MINIT(phiz_cregx)(INIT_FUNC_ARGS_PASSTHRU);
 	PHP_MINIT(phiz_ctoml)(INIT_FUNC_ARGS_PASSTHRU);
+	PHP_MINIT(phiz_daytime)(INIT_FUNC_ARGS_PASSTHRU);
 	return SUCCESS;
 }
 /* }}} */

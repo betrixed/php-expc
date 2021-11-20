@@ -1,54 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 3fd465c7aae2ed38386341195f82f662c348be88 */
-
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_toml_parse, 0, 1, IS_ARRAY, 0)
-	ZEND_ARG_TYPE_INFO(0, subject, IS_STRING, 0)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_daytime_set, 0, 3, IS_DOUBLE, 0)
-	ZEND_ARG_TYPE_INFO(0, hours, IS_LONG, 0)
-	ZEND_ARG_TYPE_INFO(0, mins, IS_LONG, 0)
-	ZEND_ARG_TYPE_INFO(0, seconds, IS_DOUBLE, 0)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_daytime_str, 0, 1, IS_DOUBLE, 0)
-	ZEND_ARG_TYPE_INFO(0, t24, IS_STRING, 0)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_daytime_split, 0, 4, IS_VOID, 0)
-	ZEND_ARG_TYPE_INFO(0, t24, IS_DOUBLE, 0)
-	ZEND_ARG_TYPE_INFO(1, h24, IS_LONG, 0)
-	ZEND_ARG_TYPE_INFO(1, min, IS_LONG, 0)
-	ZEND_ARG_TYPE_INFO(1, sec, IS_DOUBLE, 0)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_format, 0, 1, IS_STRING, 0)
-	ZEND_ARG_TYPE_INFO(0, t24, IS_DOUBLE, 0)
-	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, flags, IS_LONG, 0, "0")
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_class_DayTime___construct, 0, 0, 1)
-	ZEND_ARG_TYPE_INFO(0, t24, IS_STRING, 0)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_DayTime_set, 0, 3, IS_VOID, 0)
-	ZEND_ARG_TYPE_INFO(0, hours, IS_LONG, 0)
-	ZEND_ARG_TYPE_INFO(0, mins, IS_LONG, 0)
-	ZEND_ARG_TYPE_INFO(0, seconds, IS_DOUBLE, 0)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_DayTime_split, 0, 3, IS_VOID, 0)
-	ZEND_ARG_TYPE_INFO(1, h24, IS_LONG, 0)
-	ZEND_ARG_TYPE_INFO(1, min, IS_LONG, 0)
-	ZEND_ARG_TYPE_INFO(1, sec, IS_DOUBLE, 0)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_DayTime_format, 0, 0, IS_STRING, 0)
-	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, flags, IS_LONG, 0, "0")
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_DayTime___toString, 0, 0, IS_STRING, 0)
-ZEND_END_ARG_INFO()
+ * Stub hash: 0a198fc1260f8556c79415d938016da727f69e37 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Cregx___construct, 0, 0, 1)
 	ZEND_ARG_TYPE_INFO(0, exp, IS_STRING, 0)
@@ -56,7 +7,8 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Cregx___construct, 0, 0, 1)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, global, IS_LONG, 0, "0")
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_Cregx___toString arginfo_class_DayTime___toString
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Cregx___toString, 0, 0, IS_STRING, 0)
+ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Cregx_match, 0, 2, IS_LONG, 0)
 	ZEND_ARG_TYPE_INFO(0, subject, IS_STRING, 0)
@@ -75,20 +27,21 @@ ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Cregx_setExpr, 0, 1, IS_VO
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, global, IS_LONG, 0, "0")
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Ctoml_matchInt, 0, 1, IS_LONG, 0)
-	ZEND_ARG_TYPE_INFO(0, s, IS_STRING, 0)
-ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_OBJ_INFO_EX(arginfo_class_Ctoml_matchDateTime, 0, 1, DateTime, 0)
-	ZEND_ARG_TYPE_INFO(0, s, IS_STRING, 0)
-ZEND_END_ARG_INFO()
+ZEND_METHOD(Cregx, __construct);
+ZEND_METHOD(Cregx, __toString);
+ZEND_METHOD(Cregx, match);
+ZEND_METHOD(Cregx, captures);
+ZEND_METHOD(Cregx, clear);
+ZEND_METHOD(Cregx, setExpr);
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Ctoml_matchBool, 0, 1, _IS_BOOL, 0)
-	ZEND_ARG_TYPE_INFO(0, s, IS_STRING, 0)
-ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Ctoml_matchFloatDot, 0, 1, IS_DOUBLE, 0)
-	ZEND_ARG_TYPE_INFO(0, s, IS_STRING, 0)
-ZEND_END_ARG_INFO()
-
-#define arginfo_class_Ctoml_matchFloatExp arginfo_class_Ctoml_matchFloatDot
+static const zend_function_entry class_Cregx_methods[] = {
+	ZEND_ME(Cregx, __construct, arginfo_class_Cregx___construct, ZEND_ACC_PUBLIC)
+	ZEND_ME(Cregx, __toString, arginfo_class_Cregx___toString, ZEND_ACC_PUBLIC)
+	ZEND_ME(Cregx, match, arginfo_class_Cregx_match, ZEND_ACC_PUBLIC)
+	ZEND_ME(Cregx, captures, arginfo_class_Cregx_captures, ZEND_ACC_PUBLIC)
+	ZEND_ME(Cregx, clear, arginfo_class_Cregx_clear, ZEND_ACC_PUBLIC)
+	ZEND_ME(Cregx, setExpr, arginfo_class_Cregx_setExpr, ZEND_ACC_PUBLIC)
+	ZEND_FE_END
+};

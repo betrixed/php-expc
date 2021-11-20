@@ -36,6 +36,7 @@ typedef struct _toml_stream {
 }
 toml_stream;
 
+
 typedef struct _phiz_ctoml* pz_tomp;
 
 typedef struct _phiz_ctoml {
@@ -45,7 +46,6 @@ typedef struct _phiz_ctoml {
 
 extern PHPAPI zend_class_entry *phiz_ce_Tomp;
 
-PHP_MINIT_FUNCTION(phiz_ctoml);
 
 static inline  pz_tomp phiz_ctoml_from_obj(zend_object *obj)
 {

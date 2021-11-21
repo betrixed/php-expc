@@ -14,79 +14,111 @@
 
 #define PREG_START_LEN_OFFSET       (1<<10)
 
+#define PRE_EXP	"/\\G"
+#define POST_EXP "/u"
+
+// for regular expression processing
+
+
+const char cRexBool[] =  PRE_EXP "(true|false)" POST_EXP ;
+const char cDateTime[] = PRE_EXP "(\\d{4}-\\d{2}-\\d{2}(T\\d{2}:\\d{2}:\\d{2}(\\.\\d{6})?(Z|-\\d{2}:\\d{2})?)?)" POST_EXP;
+const char cFloatExp[] = PRE_EXP "([+-]?((\\d_?)+([\\.](\\d_?)*)?)([eE][+-]?(_?\\d_?)+))" POST_EXP;
+const char cFloatDot[] = PRE_EXP "([+-]?((\\d_?)+([\\.](\\d_?)*)))" POST_EXP;
+const char cInteger[] = PRE_EXP "([+-]?(\\d_?)+)" POST_EXP;
+const char cNaN[] = PRE_EXP "([+-]?inf|[+-]?nan)" POST_EXP;
+
+const char cDayTime[] = PRE_EXP "(\\d{2}:\\d{2}(:\\d{2})?(\\.\\d+)?)" POST_EXP;
+const char cQuote3[] = PRE_EXP "(\"\"\")" POST_EXP;
+const char cApost3[] = PRE_EXP "(\'\'\')" POST_EXP;
+const char cSpace[] = PRE_EXP "(\\h+)" POST_EXP;
+const char cBareKey[] = PRE_EXP "([-A-Z_a-z0-9]+)" POST_EXP;
+const char cBaseInt[] = PRE_EXP "(0x[0-9A-Fa-f_]+|0o[0-7_]+|0b[0-1_]+|[+-]?[\\d_]+)" POST_EXP;
+const char cEscapedChar[] = PRE_EXP "(\\\\(n|t|r|f|b|\\\"|\\\\|u[0-9A-Fa-f]{4,4}|U[0-9A-Fa-f]{8,8}))" POST_EXP;
+const char cNoEscape[] = PRE_EXP "([^\\x{0}-\\x{19}\\x{22}\\x{5C}]+)" POST_EXP;
+const char cLitString[] = PRE_EXP "([^\\x{0}-\\x{19}\\x{27}]+)" POST_EXP;
+
+const char cAnyValue[] = PRE_EXP "([^\\s\\]\\},]+)" POST_EXP;
+const char cSpacedEqual[] = PRE_EXP "(\\h*=\\h*)" POST_EXP;
+const char cComment[] = PRE_EXP "(\\V*)" POST_EXP;
+const char cHashComment[] = PRE_EXP "(\\h*#\\V*|\\h*)" POST_EXP;
+
+const char cDig_Dig[] = PRE_EXP "([^\\d]_[^\\d])|(_$)" POST_EXP;
+const char cNo_0Digit[] = PRE_EXP "(0\\d+)" POST_EXP;
+const char cFloat_E[] = PRE_EXP "([^\\d]_[^\\d])|_[eE]|[eE]_|(_$)" POST_EXP;
+
+static const char* cRegMap[] = {
+	cRexBool, // 0
+	cDateTime,
+	cFloatExp,
+	cFloatDot,
+	cInteger,
+	cNaN,
+	cDayTime,
+	cQuote3,
+	cApost3,
+	cSpace,
+	cBareKey, // 10
+	cBaseInt,
+	cEscapedChar,
+	cNoEscape,
+	cLitString,
+	cAnyValue, // 15
+	cSpacedEqual,
+	cComment,
+	cHashComment,
+	cDig_Dig,
+	cNo_0Digit, // 20
+	cFloat_E, // 21
+	0
+	};
+
 enum {
-	tom_Bad = 0,
-	tom_Equal,
 	tom_Bool,
 	tom_DateTime,
-	tom_EOS,
-	tom_Integer, //5
+	tom_FloatExp,
+	tom_FloatDot,
+	tom_Integer,
+	tom_Nan, // 5
+	tom_DayTime,
 	tom_Quote3,
 	tom_Quote1,
-	tom_Apost3,
-	tom_Apost1,
-	tom_NewLine, // 10
 	tom_Space,
-	tom_LSquare, //12
-	tom_RSquare,
+	tom_BareKey, // 10
+	tom_BaseInt,
+	tom_EscapedChar,
+	tom_NoEscape,
+	tom_LitString,
+	tom_AnyValue, // 15
+	tom_SpacedEqual,
+	tom_Comment,
+	tom_HashComment, 
+	tom_Dig_Dig,
+	tom_No_0Digit, // 20
+	tom_Float_E, // 21
+	tom_Bad,	// end of map indexes
+	tom_Apost1,
+	tom_Apost3, 
+	tom_NewLine,  // 25
+	tom_LSquare,  
+	tom_RSquare, 
 	tom_LCurly,
 	tom_RCurly,
 	tom_Comma,
 	tom_Dot,
-	tom_BareKey, // 18
-	tom_EscapedChar,
 	tom_Escape,
-	tom_NoEscape,
-	tom_FloatExp,
-	tom_FloatDot,
-	tom_Hash,
-	tom_LitString,
-	tom_SpacedEqual,
-	tom_Comment,
-	tom_HashComment,
-	tom_AnyValue,
-	tom_Dig_Dig,
-	tom_No_0Digit,
-	tom_Float_E,
+	tom_Hash, 
+	tom_Equal,
 	tom_AnyChar,
+	tom_EOS
 };
-
-// for regular expression processing
-
-const char cRexBool[] = "(true|false)";
-const char cDateTime[] = "(\\d{4}-\\d{2}-\\d{2}(T\\d{2}:\\d{2}:\\d{2}(\\.\\d{6})?(Z|-\\d{2}:\\d{2})?)?)";
-const char cFloatExp[] = "([+-]?((\\d_?)+([\\.](\\d_?)*)?)([eE][+-]?(_?\\d_?)+))";
-const char cFloatDot[] = "([+-]?((\\d_?)+([\\.](\\d_?)*)))";
-const char cInteger[] = "([+-]?(\\d_?)+)";
-const char cTime[] = "(\\d{2}:\\d{2}:\\d{2}(\\.\\d{6})?)";
-const char cQuote3[] = "(\"\"\")";
-const char cApost3[] = "(\'\'\')";
-const char cSpace[] = "(\\h+)";
-const char cBareKey[] = "([-A-Z_a-z0-9]+)";
-
-const char cEscapedChar[] = "(\\\\(n|t|r|f|b|\\\"|\\\\|u[0-9A-Fa-f]{4,4}|U[0-9A-Fa-f]{8,8}))";
-const char cNoEscape[] = "([^\\x{0}-\\x{19}\\x{22}\\x{5C}]+)";
-const char cLitString[] = "([^\\x{0}-\\x{19}\\x{27}]+)";
-
-const char cAnyValue[] = "([^\\s\\]\\},]+)";
-const char cSpacedEqual[] = "(\\h*=\\h*)";
-const char cComment[] = "(\\V*)";
-const char cHashComment[] = "(\\h*#\\V*|\\h*)";
-
-const char cDig_Dig[] = "([^\\d]_[^\\d])|(_$)";
-const char cNo_0Digit[] = "(0\\d+)";
-const char cFloat_E[] = "([^\\d]_[^\\d])|_[eE]|[eE]_|(_$)";
 
 
 static int toml_key_exp[] = {tom_Space, tom_BareKey, 
 	tom_Integer, 0};
 
-static int toml_value_exp[] = {tom_Bool, tom_DateTime, 
-	tom_FloatExp, tom_FloatDot, 
-	tom_Integer,0};
+static int toml_value_exp[] = {tom_Bool, tom_DateTime, tom_FloatExp, tom_FloatDot, tom_Integer,0};
 
-static int toml_estr_exp[] = {tom_Space, tom_NoEscape, 
-	tom_EscapedChar, tom_Quote3, 0};
+static int toml_estr_exp[] = {tom_Space, tom_NoEscape, tom_EscapedChar, tom_Quote3, 0};
 
 static int toml_lstr_exp[] = {tom_LitString, 0};
 static int toml_mlstr_exp[] = {tom_LitString, tom_Apost3, 0};
@@ -94,17 +126,18 @@ static int toml_mlstr_exp[] = {tom_LitString, tom_Apost3, 0};
 
 typedef struct _tom_part_tag {
 	HashTable*   base;
+	HashTable*   last;
 	int          n;
 	bool         aot;
 	bool         implicit;
 }
 tom_part_tag;
 
+tom_part_tag*  new_tag_part(HashTable* leaf, bool isAOT);
+
 HashTable* tag_part_endRef(tom_part_tag* ptag);
 HashTable* tag_part_newRef(tom_part_tag* ptag);
-zend_string* str_del_char(zend_string* src, char delme, bool* changed );
-
-
+zend_string* str_del_char(zend_string* src, char delme);
 
 
 /** forwards declarations */
@@ -115,6 +148,7 @@ void ts_key_value(toml_stream* oo);
 void  ts_set_errorMsg(toml_stream* oo, zend_string* msg);
 
 void ts_syntax_error(toml_stream* oo, const char* msg) {
+	printf("Syntax error: %s\n", msg);
 	ts_set_errorMsg(oo, strpprintf(0,"TOML syntax: %s", msg));
 }
 
@@ -196,11 +230,11 @@ int ts_peekToken(toml_stream* oo) {
 				oo->is_single = 1;
 			}
 			else {
-				oo->id = tom_EOS;
+				oo->id = tom_AnyChar;
 			}
 		}
 		else {
-			oo->id = tom_EOS;
+			oo->id = tom_AnyChar;
 		}
 	}
 	oo->line = oo->tokenLine;
@@ -217,7 +251,6 @@ int ts_str_captures(toml_stream* oo, zend_string* expr, zend_string* alt)
 {
 	zval  retval;
 	
-
 	if (Z_TYPE(oo->subpats) != IS_NULL) {
 		//printf("captures delref %d\n", Z_REFCOUNT(oo->subpats));
 		zend_hash_release(Z_ARR(oo->subpats));
@@ -238,16 +271,21 @@ int ts_str_captures(toml_stream* oo, zend_string* expr, zend_string* alt)
 		src = oo->hold;
 		offset = oo->index;
 	}
-
+	
 	pcre_cache_entry* entry = pcre_get_compiled_regex_cache(expr);
+	if (!entry) {
+		printf("Error expr %s\n", ZSTR_VAL(expr));
 
+		return 0;
+	}
+	 
 	php_pcre_match_impl(entry, src, &retval, &oo->subpats, 
 		/*global*/ 0, /*use flags*/ 1, /*flags*/0, 
 		/*offset*/ offset);
 
 	if (Z_TYPE(oo->subpats) == IS_ARRAY) {
 		int count = zend_array_count(Z_ARR(oo->subpats));
-		//printf("%d captures created %d %lx\n",count, Z_REFCOUNT(oo->subpats), Z_ARR(oo->subpats));
+		 
 		return count;
 	}
 	return 0;
@@ -255,26 +293,35 @@ int ts_str_captures(toml_stream* oo, zend_string* expr, zend_string* alt)
 // return count if number of captures > 1
 int ts_expr_captures(toml_stream* oo, int exp_index, zend_string* alt) {
 	zval *pzval;
-	pzval = zend_hash_index_find(oo->map, exp_index);
-	if (zval_get_type(pzval) != IS_STRING) {  
+	
+	if (exp_index >= tom_Bad) {
 		oo->error = 1;
 		oo->errorMsg = strpprintf(0, "Invalid expression index %ld", (long)exp_index);
 		return 0;
 	}
-	return ts_str_captures(oo, Z_STR_P(pzval), alt);
+	zend_string* zs = oo->zs_map[exp_index];
+	if (zs == NULL) {
+		const char* expr = 	cRegMap[exp_index];
+		zs = zend_string_init(expr, strlen(expr), 0);
+		oo->zs_map[exp_index] = zs;
+	}
+	
+	return ts_str_captures(oo, zs, alt);
 }
 // return expression id that captures > 1
 int ts_firstMatch(toml_stream* oo) {
 	int* expSet = oo->expSet;
 	zval *pzval;
 	int  exp_index;
+	//printf("firstMatch\n");
 
 	while(exp_index = *expSet++) {
-
+		//printf("Try %d\n", exp_index);
 		if (ts_expr_captures(oo, exp_index, NULL) > 1) {
 			return exp_index;
 		}
 	}
+
 	return 0;
 }
 /**
@@ -284,8 +331,12 @@ int ts_firstMatch(toml_stream* oo) {
 
 void ts_assign_value(toml_stream* oo, zend_string* val) {
 	//printf("value release = %d\n", oo->value->gc);
-	zend_string_release(oo->value);
-	if (!ZSTR_IS_INTERNED(val)) {
+	zend_string* oldval = oo->value;
+	if (oldval) {
+		if (!ZSTR_IS_INTERNED(oldval))
+			zend_string_release(oldval);
+	}
+	if (val && !ZSTR_IS_INTERNED(val)) {
 		oo->value = zend_string_copy(val);
 	}
 	else {
@@ -309,7 +360,12 @@ void ts_doneToken(toml_stream* oo)
 		oo->index++;
 		return;
 	}
-	oo->index += ZSTR_LEN(oo->value);
+	if (!oo->is_single) {
+		oo->index += ZSTR_LEN(oo->value);
+	}
+	else {
+		oo->index += 1;
+	}
 }
 
 
@@ -341,6 +397,23 @@ int ts_moveNext(toml_stream* oo) {
 			ts_assign_value(oo,Z_STR_P(find));
 			oo->index += ZSTR_LEN(oo->value);
 			/* all captures from first character */
+		}
+		else {
+			oo->index += ch_size;
+			oo->is_single = false;
+			if (ch_size==1) {
+				int fit = ts_single_match(oo->code);
+				if (fit) {
+					oo->id = fit;
+					oo->is_single = true;
+				}
+				else {
+					oo->id = tom_EOS;
+				}
+			}
+			else {
+				oo->id = tom_EOS;
+			}
 		}
 	}
 	oo->line = oo->tokenLine;
@@ -374,13 +447,17 @@ bool ts_moveExpr(toml_stream* oo, int id) {
 	zval*    fix;
 
 	if (oo->index < oo->slen) {
+		//printf("moveExpr %d\n", id);
 		if (ts_expr_captures(oo, id, NULL) > 1) {
 			// get value as 2nd capture
 			find = zend_hash_index_find(Z_ARR(oo->subpats),1);
 			ts_assign_value(oo,Z_STR_P(find));
 			// offset position by length of 1st capture
 			fix = zend_hash_index_find(Z_ARR(oo->subpats),0);
-			oo->index += ZSTR_LEN(Z_STR_P(fix));
+			zend_string* eat = Z_STR_P(fix);
+			//printf("Eat %s\n", ZSTR_VAL(eat));
+
+			oo->index += ZSTR_LEN(eat);
 			oo->id = tom_AnyChar;
 			oo->is_single = 0;
 			return true;
@@ -427,33 +504,33 @@ bool ts_float_dot(toml_stream* oo, zend_string* src, zend_string** ret) {
 		return false;
 	}
 	bool changed = false;
-	zend_string* stripped = str_del_char(oo->value,'_', &changed);
+	zend_string* stripped = str_del_char(oo->value,'_');
 	*ret = stripped;
 	return changed;
 }
 
-bool ts_float_exp(toml_stream* oo, zend_string* src, zend_string** ret) {
+void ts_float_exp(toml_stream* oo, zend_string* src, zend_string** ret) {
 	// continue from subpats
-
+	*ret = NULL;
 	if (ts_expr_captures(oo, tom_Float_E, src)) {
 		ts_value_error(oo, "Invalid float: Underscore must be between digits", src);
-		return false;
+		return;
 	}
 
 	bool changed = false;
-	zend_string* strip = str_del_char(src,'_', &changed);
+	zend_string* strip = str_del_char(src,'_');
 	*ret = strip;
 
 	if (ts_expr_captures(oo, tom_No_0Digit, strip))
 	{
 		ts_value_error(oo, "Leading zero not allowed", src);
-		return changed;
+		return;
 	}
 	
-	return changed;
+	return;
 }
 
-zend_string* str_del_char(zend_string* src, char delme, bool* changed)
+zend_string* str_del_char(zend_string* src, char delme)
 {
 	char* sptr = ZSTR_VAL(src);
 	int   slen = ZSTR_LEN(src);
@@ -477,30 +554,28 @@ zend_string* str_del_char(zend_string* src, char delme, bool* changed)
 				}
 				bptr++;
 			}
-			smart_str_0(&cstr);
-		*changed = true;
+		smart_str_0(&cstr);
 		return cstr.s;
 	}
-	*changed = false;
-	return  src;
+	return  zend_string_copy(src);
 }
-bool ts_integer(toml_stream* oo, zend_string* src, zend_string** ret) {
+void no_underscore(toml_stream* oo, zend_string* src, zend_string** ret) {
+	*ret = NULL;
 	char* sptr = ZSTR_VAL(src);
 	int   slen = ZSTR_LEN(src);
 	int   change = 0;
 	char* eptr = sptr + slen;
 	char* bptr;
 	if (slen > 0) {
+		// only between is allowed
 		if ( (*(sptr + slen - 1) == '_')
 				 || ((*sptr) == '_') )
 		{
 			ts_value_error(oo, "Integer underscore must be between digits", src);
-			return false;
+			return;
 		}
 	}
-	bool changed;
-	*ret = str_del_char(src,'_',&changed);
-	return changed;
+	*ret = str_del_char(src,'_');
 }
 
 /* string contains '\' followed by escaped character specifier */
@@ -513,6 +588,7 @@ void ts_escape_fragment(toml_stream* oo,
 	char* sptr = ZSTR_VAL(oo->value);
 	int   slen = ZSTR_LEN(oo->value);
 
+	//printf("Escape segment %s\n", sptr);
 	char val = *(sptr+1);
 	switch(val) {
 		case 'n':
@@ -559,7 +635,7 @@ void ts_mlq_string(toml_stream* oo, zend_string** ret)
 	int  id;
 	bool inloop = true;
 	int* old_exp_set = oo->expSet;
-	zend_string *fragment;
+	
 
 	smart_str cstr = {0};
 
@@ -591,10 +667,14 @@ void ts_mlq_string(toml_stream* oo, zend_string** ret)
 				smart_str_appendc(&cstr,'\n');
 				id = ts_moveNext(oo);
 			case tom_EscapedChar:
-
+				zend_string *fragment = NULL;
 				ts_escape_fragment(oo, &fragment);
-				smart_str_append(&cstr, fragment);
-				zend_string_release(fragment);
+				if (fragment) {
+					smart_str_append(&cstr, fragment);
+					//printf("Fragment %s\n", ZSTR_VAL(fragment));
+
+					zend_string_release(fragment);
+				}
 				id = ts_moveNext(oo);
 			default:
 				smart_str_append(&cstr, oo->value);
@@ -643,29 +723,37 @@ void ts_ml_string(toml_stream* oo, zend_string** ret)
 
 void ts_quote_string(toml_stream* oo, zend_string** ret) 
 {
+
 	int* old_exp_set = oo->expSet;
 	oo->expSet = toml_estr_exp;
 	smart_str cstr = {0};
 
 	int id = ts_moveNext(oo);
+	
 	while( id != tom_Quote1 ) {
+
 		if (id == tom_NewLine || id == tom_EOS || id == tom_Escape) 
 		{
 			ts_set_errorMsg(oo, strpprintf(0,"Missing end quote"));
 			break;
 		}
 		else if (id == tom_EscapedChar) {
-
-			zend_string *temp;
-			ts_escape_fragment(oo, &temp);
-			smart_str_append(&cstr, temp);
-			zend_string_release(temp);
+			zend_string *fragment = NULL;
+			ts_escape_fragment(oo, &fragment);
+			if (fragment) {
+				smart_str_append(&cstr, fragment);
+				//printf("Fragment %s\n", ZSTR_VAL(fragment));
+				
+				zend_string_release(fragment);
+			}
+			id = ts_moveNext(oo);
 		}
 		else {
+			smart_str_append(&cstr,oo->value);
 			id = ts_moveNext(oo);
 		}
 	}
-
+	smart_str_0(&cstr);
 	*ret = cstr.s;
 	oo->expSet = old_exp_set;
 }
@@ -678,6 +766,7 @@ void ts_literal_string(toml_stream* oo, zend_string** ret)
 	int id = ts_peekToken(oo);
 
 	while (id != tom_Apost1) {
+
 		if (id == tom_NewLine || id == tom_EOS) {
 			ts_set_errorMsg(oo,strpprintf(0,"Value without end quote (')"));
 			break;
@@ -691,6 +780,9 @@ void ts_literal_string(toml_stream* oo, zend_string** ret)
 		}
 		ts_doneToken(oo);
 	}
+	smart_str_0(&cstr);
+	//printf("Lit String %s\n", ZSTR_VAL(cstr.s));
+	*ret = cstr.s;
 }
 
 void ts_key_name(toml_stream* oo, zend_string** ret) {
@@ -706,7 +798,7 @@ void ts_key_name(toml_stream* oo, zend_string** ret) {
 			ts_literal_string(oo,ret);
 			break;
 		case tom_Integer:
-			ts_integer(oo, oo->value, ret);
+			no_underscore(oo, oo->value, ret);
 			break;
 		default:
 			ts_set_errorMsg(oo,strpprintf(0,"Improper Key"));
@@ -730,6 +822,7 @@ ts_list(toml_stream* oo) {
 
 	while(inloop) {
 		id = ts_peekToken(oo);
+		//printf("List loop %d\n", id);
 		switch(id) {
 			case tom_Space:
 				ts_moveExpr(oo, tom_Space);
@@ -756,7 +849,6 @@ ts_list(toml_stream* oo) {
 	if (oo->error) {
 		return ret;
 	}
-
 	while (id != tom_RSquare) {
 		if (id == tom_LSquare) {
 			// array type is array
@@ -771,13 +863,13 @@ ts_list(toml_stream* oo) {
 			}
 			HashTable* inner = ts_list(oo);
 			ZVAL_ARR(&element, inner);
-			Z_TRY_ADDREF(element);
+			//Z_TRY_ADDREF(element);
 			zend_hash_next_index_insert(ret, &element);
 		}
 		else {
 			ts_value_zval(oo, &element);
 			int ztype = Z_TYPE(element);
-
+			
 			if (zend_array_count(ret)==0) {
 				value_type = ztype;
 			}
@@ -785,44 +877,50 @@ ts_list(toml_stream* oo) {
 				ts_array_type_error(oo,value_type,ztype);
 				break;
 			}
-			Z_TRY_ADDREF(element);
+			//Z_TRY_ADDREF(element);
+			//printf("Element type is %d at %d\n", ztype, oo->index);
 			zend_hash_next_index_insert(ret, &element);
 		}
-	}
-	if (oo->error) {
-		return ret;
-	}
-	inloop = 1;
-	while(inloop) {
-		id = ts_peekToken(oo);
-		switch(id) {
-			case tom_Space:
-				ts_moveExpr(oo,tom_Space);
-				break;
-			case tom_NewLine:
-				ts_doneToken(oo);
-				break;
-			case tom_Hash:
-				ts_doneToken(oo);
-				ts_comment(oo);
-				break;
-			case tom_Comma:
-				if (comma) {
-					ts_syntax_error(oo,"No value between commas");
-					return ret;
-				}
-				comma = true;
-				ts_doneToken(oo);
-				break;
-			case tom_EOS:
-				ts_syntax_error(oo,"Missing ']'");
-				return ret;
-			case tom_RSquare:
-				ts_doneToken(oo);
-			default:
-				inloop = false;
-				break;
 
+		if (oo->error) {
+			return ret;
+		}
+		//printf("Next element loop\n");
+		inloop = 1;
+		comma = 0;
+		while(inloop) {
+			id = ts_peekToken(oo);
+			//printf("Peek %d\n", id);
+			switch(id) {
+				case tom_Space:
+					ts_moveExpr(oo,tom_Space);
+					break;
+				case tom_NewLine:
+					ts_doneToken(oo);
+					break;
+				case tom_Hash:
+					ts_doneToken(oo);
+					ts_comment(oo);
+					break;
+				case tom_Comma:
+					if (comma) {
+						ts_syntax_error(oo,"No value between commas");
+						return ret;
+					}
+					//printf("Comma\n");
+					comma = true;
+					ts_doneToken(oo);
+					break;
+				case tom_EOS:
+					ts_syntax_error(oo,"Missing ']'");
+					return ret;
+				case tom_RSquare:
+					ts_doneToken(oo);
+				default:
+					inloop = false;
+					break;
+
+			}
 		}
 	}
 	return ret;
@@ -854,12 +952,14 @@ void ts_inline_table(toml_stream* oo) {
 }
 
 void ts_key_value(toml_stream* oo) {
-	smart_str cstr = {0};
+	
 	zend_string     *key;
-	ts_key_name(oo, &key);
 	zval            rhs;
 	HashTable       *oldTable;
-	tom_part_tag   *ptag;
+
+	ts_key_name(oo, &key);
+	
+	//printf("Key = %s\n", ZSTR_VAL(key));
 
 	if (zend_hash_exists(oo->table, key)) {
 		ts_set_errorMsg(oo, strpprintf(0,"Duplicate key %s", ZSTR_VAL(key)));
@@ -885,7 +985,7 @@ void ts_key_value(toml_stream* oo) {
 		oo->table = oldTable;
 	}
 	else {
-		ZVAL_STR(&rhs, oo->value);
+		ts_value_zval(oo, &rhs);
 	}
 	zend_hash_add(oo->table, key, &rhs);
 	zend_string_release(key);
@@ -908,12 +1008,13 @@ HashTable* toml_make_regx_table()
 	zval tmp;
 	ZVAL_ARR(&tmp,re);
 
-
 	add_index_str(&tmp, tom_Bool, wrap_expr_str(cRexBool));
 	add_index_str(&tmp, tom_DateTime, wrap_expr_str(cDateTime));
+	add_index_str(&tmp, tom_DayTime, wrap_expr_str(cDayTime));
 	add_index_str(&tmp, tom_FloatExp, wrap_expr_str(cFloatExp));
 	add_index_str(&tmp, tom_FloatDot, wrap_expr_str(cFloatDot));
 	add_index_str(&tmp, tom_Integer, wrap_expr_str(cInteger));
+	add_index_str(&tmp, tom_BaseInt, wrap_expr_str(cBaseInt));
 
 	add_index_str(&tmp, tom_Quote3, wrap_expr_str(cQuote3));
 	add_index_str(&tmp, tom_Apost3, wrap_expr_str(cApost3));
@@ -935,13 +1036,95 @@ HashTable* toml_make_regx_table()
 	return re;
 }
 
-void ts_init_ts(toml_stream* oo, zend_string* s) {
+void ts_parse_init(toml_stream* oo, zend_string* s) 
+{
+	//printf("parse_init\n");
+	if (s) {
+		oo->hold = zend_string_copy(s);
+		oo->sptr = ZSTR_VAL(s);
+		oo->slen = ZSTR_LEN(s);
+	}	
+	if (oo->value) {
+		zend_string_release(oo->value);
+	}
+	if (s) {
+		oo->value = zend_string_copy(s);
+	}
+	if (oo->errorMsg) {
+		zend_string_release(oo->errorMsg);
+		oo->error = 0;
+		oo->errorMsg = NULL;
+	}
+	oo->root = zend_new_array(4); 
+	oo->table_parts = zend_new_array(4); 
+	oo->table = oo->root;
+	oo->expSet = toml_key_exp;
+	oo->lineBegin = 0;
+	oo->flagLF = 0;
+	oo->tokenLine = 0;
+	oo->path = NULL;
+	oo->partkey = NULL;
+
+	//printf("parse_init_end\n");
+}
+
+void ts_set_path(toml_stream* oo, zend_string* p) {
+	if (oo->path) {
+		zend_string_release(oo->path);
+	}
+	oo->path = p;
+}
+
+void ts_set_partkey(toml_stream* oo, zend_string* p)
+{
+	if (oo->partkey) {
+		zend_string_release(oo->partkey);
+	}
+	oo->partkey = p;
+}
+
+void ts_parse_end(toml_stream* oo) 
+{
+	//printf("parse_end\n");
+	if (oo->hold) {
+		zend_string_release(oo->hold);
+	}
+	if (oo->value) {
+		//printf("Str ref count %d\n", oo->value->gc.refcount);
+		ts_assign_value(oo,NULL);
+	}
+
+	if (Z_TYPE(oo->subpats) != IS_NULL) {
+		zend_hash_release(Z_ARR(oo->subpats));
+		ZVAL_NULL(&oo->subpats);
+	}
+
+	if (oo->root) {
+		zend_hash_release(oo->root);
+		oo->root = NULL;
+	}
+
+	if (oo->error) {
+		if (oo->errorMsg) {
+			zend_string_release(oo->errorMsg);
+		}
+		oo->errorMsg = NULL;
+		oo->error = 0;
+	}
+	if (oo->table_parts) {
+		zend_hash_release(oo->table_parts);
+	}
+	ts_set_path(oo,NULL);
+	ts_set_partkey(oo,NULL);
+}
+
+void ts_init_ts(toml_stream* oo) {
 	ZVAL_NULL(&oo->subpats);
 
 	oo->start = 0;
 	oo->end = 0;
 	// force a valid (empty) zend_string
-	oo->value = zend_string_init("", 0, 0);
+	oo->value = NULL;
 	oo->id = 0;
 	oo->is_single = 0;
 	oo->code = 0;
@@ -953,51 +1136,36 @@ void ts_init_ts(toml_stream* oo, zend_string* s) {
 	
 	oo->tokenLine = 0;
 
-	if (s) { 
-		oo->hold = zend_string_copy(s);
-		oo->sptr = ZSTR_VAL(s);
-		oo->slen = ZSTR_LEN(s);
+	oo->hold = NULL;
+	oo->sptr = NULL;
+	oo->slen = 0;
+	
+	zend_string** map  = emalloc(sizeof(zend_string*) * (tom_Bad+1));
+	for(int i = 0; i <= tom_Bad; i++) {
+		map[i] = NULL;
 	}
-	else {
-		oo->hold = NULL;
-		oo->sptr = NULL;
-		oo->slen = 0;
-	}
+	oo->zs_map = map;
 	oo->expSet = toml_key_exp;
-	oo->map = toml_make_regx_table();
-	oo->root = zend_new_array(4); 
-	oo->table_parts = zend_new_array(4); 
-	oo->table = oo->root;
 
+	oo->root = NULL;
+	oo->table_parts = NULL;
+	oo->table = NULL;
 }
 
 void ts_destroy_ts(toml_stream* oo)
 {
-
-	if (oo->hold) {
-		zend_string_release(oo->hold);
-	}
-	if (oo->value) {
-		//printf("value ref = %d\n", oo->value->gc);
-		zend_string_release(oo->value);
-	}
-
-	if (Z_TYPE(oo->subpats) != IS_NULL) {
-		zend_hash_release(Z_ARR(oo->subpats));
-		ZVAL_NULL(&oo->subpats);
-	}
-
-	if (oo->root) {
-		zend_hash_release(oo->root);
-	}
-
-	if (oo->error) {
-		if (oo->errorMsg) {
-			zend_string_release(oo->errorMsg);
+	zend_string** map = oo->zs_map;
+	if (map != NULL) {
+		for(int i = 0; i <= tom_Bad; i++) {
+			if (map[i] != NULL) 
+			{
+				zend_string_release(map[i]);
+			}
 		}
+		efree(map);
+		oo->zs_map = NULL;
 	}
-	zend_hash_release(oo->table_parts);
-	zend_hash_release(oo->map);
+	ts_parse_end(oo);
 }
 
 int ts_finish_line(toml_stream* oo)
@@ -1011,28 +1179,71 @@ int ts_finish_line(toml_stream* oo)
 }
 
 
-void add_path_part(smart_str* p, zend_string* leaf) {
-	smart_str_appendc(p, ']');
-	smart_str_append(p,leaf);
-	smart_str_appendc(p,']');
-	smart_str_0(p);
+zend_string* add_path_part(zend_string* path, zend_string* leaf) {
+	smart_str cstr = {0};
+
+	if (path) {
+		smart_str_append(&cstr, path);
+		smart_str_appendc(&cstr, '.');
+	}
+	smart_str_append(&cstr,leaf);
+	smart_str_0(&cstr);
+	return cstr.s;
 }
+
+tom_part_tag* new_tag_part(HashTable *leaf, bool isAOT) {
+	tom_part_tag* ptag = emalloc(sizeof(tom_part_tag));
+	ptag->base = leaf;
+	ptag->last = NULL;
+	ptag->n = 0;
+	ptag->aot = isAOT;
+	ptag->implicit = true;
+	return ptag;
+}
+/* retrieve current last array of table of arrays */
+HashTable* tag_part_endRef(tom_part_tag* ptag)
+{
+	printf("Last array part %lx\n", ptag->last);
+	return ptag->last;
+}
+
+/* Add a new array and increment arrays count */
+HashTable* tag_part_newRef(tom_part_tag* ptag)
+{
+	int ct = ptag->n;
+	HashTable* result = zend_new_array(4);
+	zval       nt;
+	ZVAL_ARR(&nt, result);
+	zend_hash_next_index_insert(ptag->base, &nt);
+	ptag->last = result;
+	ptag->n++;
+	printf("New array part %lx\n", result);
+	return result;
+}
+
 void ts_table_path(toml_stream* oo)
 {
-	bool isAOT = false;
-	bool hitNew = false;
-	smart_str path = {0};
+	HashTable* path_ref = oo->root;
+	printf("path_ref %lx %d\n",path_ref, path_ref->gc.refcount);
+	ts_set_path(oo,NULL);
+	ts_set_partkey(oo,NULL);
+
+	tom_part_tag* 	ptag = NULL;
+
 	int dotCount = 0;
 	int aotLength = 0;
-
-	HashTable* path_ref = oo->root;
 	int inloop = 1;
 	int parts_ct = 0;
-	zend_string     *part_key;
-	int id = ts_moveNext(oo);
-	tom_part_tag* ptag;
-
+	int id = 0; 
+	bool isAOT = false;
+	bool hitNew = false;
+	zend_string* part_key = NULL;
+	zend_string* path = NULL;
+	
+	id = ts_moveNext(oo);
+	
 	while(inloop) {
+		printf("TablePath id = %d\n", id);
 		switch(id) {
 			case tom_Hash:
 				ts_syntax_error(oo, "Unexpected '#' in path");
@@ -1062,7 +1273,8 @@ void ts_table_path(toml_stream* oo)
 				}
 				break;
 			case tom_LSquare:
-				if (dotCount < 1 && ZSTR_LEN(path.s) > 0)  {
+
+				if (dotCount < 1 && oo->path )  {
 					ts_syntax_error(oo, "Expected a '.' after path part");
 					return;
 				}
@@ -1072,6 +1284,7 @@ void ts_table_path(toml_stream* oo)
 				}
 				id = ts_moveNext(oo);
 				isAOT = true;
+				printf("AOT found id = %d\n", id);
 				break;
 			case tom_Dot:
 				if (dotCount > 0) {
@@ -1084,35 +1297,51 @@ void ts_table_path(toml_stream* oo)
 			case tom_Quote1:
 			default:
 				
+				part_key = NULL;
 				ts_key_name(oo, &part_key);
-				add_path_part(&path, part_key);
+				ts_set_partkey(oo, part_key); 
+
+				zend_string* path = add_path_part(oo->path, part_key);
+				ts_set_path(oo,path);
+
+
 				if ((dotCount < 1) && (parts_ct > 0)) {
 					ts_syntax_error(oo,"Expected a '.' after path part");
 					return;
 				}
+				printf("Full path = %s\n", ZSTR_VAL(path));
 				dotCount = 0;
 				parts_ct += 1;
-				if (zend_hash_exists(path_ref, part_key)) {
-					zval* part = zend_hash_find(path_ref, part_key);
+				printf("Array part here %lx\n", path_ref);
+
+				zval* part = zend_hash_find(path_ref, part_key);
+				if (part) {
+					//zend_hash_exists(path_ref, part_key)
+
 					if (Z_TYPE_P(part) != IS_ARRAY) {
+
 						ts_syntax_error(oo,"Table path already a key=value");
 						return;
 					}
 					path_ref = Z_ARR_P(part);
+					
+					zval* pentry = zend_hash_find(oo->table_parts, path);
 
-					ptag = zend_hash_find_ptr(oo->table_parts, path.s);
-					if (ptag==NULL) {
+					if (pentry==NULL) {
 						ts_syntax_error(oo,"Unexpected no path part");
 						return;
 					}
+					ptag = (tom_part_tag*) Z_PTR_P(pentry);
+					printf("ptag %lx ct: %d, ref: %lx\n", ptag, ptag->n, ptag->base);
 					if (ptag->aot) {
 						aotLength++;
-						if (ptag->implicit) {
+						if (!ptag->implicit) {
 							path_ref = tag_part_endRef(ptag);
 						}
 					}
 				}
 				else {
+
 					hitNew = true;
 					if (isAOT) {
 						aotLength++;
@@ -1120,25 +1349,29 @@ void ts_table_path(toml_stream* oo)
 					HashTable* leaf = zend_new_array(4);
 					zval  temp;
 					ZVAL_ARR(&temp, leaf);
-					zend_hash_add(path_ref, part_key, &temp );
+					zend_hash_str_add(path_ref, ZSTR_VAL(part_key), ZSTR_LEN(part_key), &temp );
 					path_ref = leaf;
-					ptag = emalloc(sizeof(tom_part_tag));
-					ptag->base = leaf;
-					ptag->n = 0;
-					ptag->aot = isAOT;
-					ptag->implicit = true;
-					zend_hash_add_ptr(oo->table_parts, path.s, ptag);
+					ptag = new_tag_part(leaf, isAOT);
+					//zend_string* key = zend_string_copy(path);
+					zval   myp;
+					ZVAL_PTR(&myp, ptag);
+					void* ptr = zend_hash_str_add(oo->table_parts, 
+						ZSTR_VAL(path), ZSTR_LEN(path),
+						&myp);
 
 				}
 				id = ts_moveNext(oo);
 				break;
 		} // switch
 	} // loop
-	if (ZSTR_LEN(path.s)==0) {
+	if (part_key = NULL)
+	{	
+		ts_set_partkey(oo,NULL);
+	}
+	if (ZSTR_LEN(path)==0) {
 		ts_syntax_error(oo, "Table path cannot be empty");
 		return;
 	}
-
 	if (hitNew) {
 		if (ptag->aot) {
 			path_ref = tag_part_newRef(ptag);
@@ -1162,6 +1395,7 @@ void ts_table_path(toml_stream* oo)
 				ptag->implicit = false;
 		}
 	}
+	ts_set_path(oo,NULL);
 	oo->table = path_ref;
 }
 
@@ -1177,18 +1411,73 @@ bool ts_match_integer(toml_stream* oo, zval* ret, bool* partial)
 {
 	//printf("match_integer value ref = %d\n", oo->value->gc);
 	if (ts_expr_captures(oo, tom_Integer, oo->value)) {
-		
+
 		zval* find = zend_hash_index_find(Z_ARR(oo->subpats),1);
 		zend_string* match = Z_STR_P(find);
-		zend_string* istr;
+		zend_string* istr = NULL;
 		if (ZSTR_LEN(oo->value) == ZSTR_LEN(match)) {
-			bool release = ts_integer(oo, match, &istr);
+			no_underscore(oo, match, &istr);
+			if (oo->error) {
+				if (istr) zend_string_release(istr);		
+				return true; // force end matching
+			}
+
 			char* endptr;
 			long  decval = strtol(ZSTR_VAL(istr),&endptr,10);
 			ZVAL_LONG(ret, decval);
-			if (release) {
-				zend_string_release(istr);
+			zend_string_release(istr);
+
+			return true;
+		}
+		if (!*partial) {
+			*partial = true;
+		}
+	}
+	return false;
+}
+
+bool ts_match_base(toml_stream* oo, zval* ret, bool* partial) 
+{
+	//printf("match_integer value ref = %d\n", oo->value->gc);
+	printf("Base match %s\n", ZSTR_VAL(oo->value));
+	if (ts_expr_captures(oo, tom_BaseInt, oo->value)) {
+		
+		zval* find = zend_hash_index_find(Z_ARR(oo->subpats),1);
+		zend_string* match = Z_STR_P(find);
+		zend_string* istr = NULL;
+		if (ZSTR_LEN(oo->value) == ZSTR_LEN(match)) {
+			no_underscore(oo, match, &istr);
+			if (oo->error) {
+				if (istr)
+					zend_string_release(istr);
+				return true; // force end matching
 			}
+			char* pbase = ZSTR_VAL(istr);
+			int base = 0;
+			printf("Base %s\n", pbase);
+			switch(*(pbase+1)) {
+				case 'b': 
+					base = 2;
+					pbase += 2;
+					break;
+				case 'o':
+					base = 8;
+					pbase += 2;
+					break;
+				case 'x':
+					base = 16;
+					pbase += 2;
+					break;
+				default:
+					base = 10;
+					break;
+			}
+			char* endptr;
+			long  decval = strtol(pbase,&endptr,base);
+			ZVAL_LONG(ret, decval);
+
+			zend_string_release(istr);
+			
 			return true;
 		}
 		if (!*partial) {
@@ -1203,16 +1492,21 @@ bool ts_match_floatdot(toml_stream* oo, zval* ret, bool* partial)
 	if (ts_expr_captures(oo, tom_FloatDot, oo->value)) {
 		zval* find = zend_hash_index_find(Z_ARR(oo->subpats),1);
 		zend_string* match = Z_STR_P(find);
-		zend_string* fstr;
+		zend_string* fstr = NULL;
 		if (ZSTR_LEN(oo->value) == ZSTR_LEN(match)) {
 			
-			bool release = ts_float_dot(oo, match, &fstr);
+			ts_float_dot(oo, match, &fstr);
+
+			if (oo->error) {
+				if (fstr) {
+					zend_string_release(fstr);
+				}
+				return true; // force end matching
+			}
 			char* endptr;
 			double d = strtod(ZSTR_VAL(fstr),&endptr);
 			printf("Float match %lg\n", d);
-			if (release) {
-				zend_string_release(fstr);
-			}
+			zend_string_release(fstr);
 			ZVAL_DOUBLE(ret, d);
 			return true;
 		}
@@ -1228,14 +1522,39 @@ bool ts_match_floatexp(toml_stream* oo, zval* ret, bool* partial)
 	if (ts_expr_captures(oo, tom_FloatExp, oo->value)) {
 		zval* find = zend_hash_index_find(Z_ARR(oo->subpats),1);
 		zend_string* match = Z_STR_P(find);
-		zend_string* fstr;
+		zend_string* fstr = NULL;
 		if (ZSTR_LEN(oo->value) == ZSTR_LEN(match)) {
-			bool release = ts_float_exp(oo, match, &fstr);
+			ts_float_exp(oo, match, &fstr);
+
+			if (oo->error) {
+				if (fstr) {
+					zend_string_release(fstr);
+				}
+				return true; // force end matching
+			}
 			char* endptr;
 			double d = strtod(ZSTR_VAL(fstr),&endptr);
-			if (release) {
-				zend_string_release(fstr);
-			}
+			zend_string_release(fstr);
+			ZVAL_DOUBLE(ret, d);
+			return true;
+		}
+		if (!*partial) {
+			*partial = true;
+		}
+	}
+	return false;
+}
+
+
+bool ts_match_nan(toml_stream* oo, zval* ret, bool* partial) 
+{
+	if (ts_expr_captures(oo, tom_Nan, oo->value)) {
+		zval* find = zend_hash_index_find(Z_ARR(oo->subpats),1);
+		zend_string* match = Z_STR_P(find);
+		if (ZSTR_LEN(oo->value) == ZSTR_LEN(match)) {
+			char* endptr;
+			double d = strtod(ZSTR_VAL(match),&endptr);
+			printf("Float match %lg\n", d);
 			ZVAL_DOUBLE(ret, d);
 			return true;
 		}
@@ -1296,8 +1615,6 @@ bool ts_match_datetime(toml_stream* oo, zval* ret, bool* partial)
 		zend_string* match = Z_STR_P(find);
 		zend_string* fstr;
 		if (ZSTR_LEN(oo->value) == ZSTR_LEN(match)) {
-			
-
 			static zend_string* dtname = NULL;
 			if (dtname == NULL) {
 				dtname = zend_string_init("DateTime", sizeof("DateTime")-1, 1);
@@ -1313,7 +1630,41 @@ bool ts_match_datetime(toml_stream* oo, zval* ret, bool* partial)
 			zend_function *ctor = Z_OBJ_HT(zvalobj)->get_constructor(obj);
 
 			int result = call_function_by_ptr(ctor, obj, &zvalobj, 1, find);
-			printf("call result = %d %d\n", result, Z_TYPE_P(ret));
+			//printf("call result = %d %d\n", result, Z_TYPE_P(ret));
+			return true;
+		}
+		if (!*partial) {
+			*partial = true;
+		}
+	}
+	return false;
+}
+
+
+bool ts_match_daytime(toml_stream* oo, zval* ret, bool* partial) 
+{
+	if (ts_expr_captures(oo, tom_DayTime, oo->value)) {
+		zval* find = zend_hash_index_find(Z_ARR(oo->subpats),1);
+		zend_string* match = Z_STR_P(find);
+		zend_string* fstr;
+		if (ZSTR_LEN(oo->value) == ZSTR_LEN(match)) {
+			
+			static zend_string* dtname = NULL;
+			if (dtname == NULL) {
+				dtname = zend_string_init("DayTime", sizeof("DayTime")-1, 1);
+			}
+			zend_class_entry *dtentry = zend_lookup_class(dtname);
+			
+			zval zvalobj;
+			object_init_ex(&zvalobj, dtentry);
+			zend_object* obj = Z_OBJ(zvalobj);
+
+
+			ZVAL_COPY_VALUE(ret, &zvalobj);
+			zend_function *ctor = Z_OBJ_HT(zvalobj)->get_constructor(obj);
+
+			int result = call_function_by_ptr(ctor, obj, &zvalobj, 1, find);
+			//printf("call result = %d %d\n", result, Z_TYPE_P(ret));
 			return true;
 		}
 		if (!*partial) {
@@ -1344,12 +1695,14 @@ void ts_value_zval(toml_stream* oo, zval* ret)
 			ts_mlq_string(oo, &str);
 		}
 		else {
-			ts_doneToken(oo);
+			ts_doneToken(oo);			
 			ts_quote_string(oo, &str);
+
 		}
 	}
 	if (str) {
 		ZVAL_STR(ret, str);
+		printf("Done quote %s\n", ZSTR_VAL(str));
 		return;
 	}
 
@@ -1363,6 +1716,20 @@ void ts_value_zval(toml_stream* oo, zval* ret)
 	}
 	bool isPartial = false;
 
+	char* pval = ZSTR_VAL(oo->value);
+	if (*pval == '0') {
+		switch(*(pval+1)) {
+			case 'b':
+			case 'x':
+			case 'o':
+				if (ts_match_base(oo, ret, &isPartial)) {
+					return;
+				}
+				break;
+			default:
+				break;
+		}
+	}
 	if (ts_match_integer(oo, ret, &isPartial)) {
 		return;
 	}
@@ -1379,7 +1746,15 @@ void ts_value_zval(toml_stream* oo, zval* ret)
 		return;
 	}
 
+	if (ts_match_nan(oo, ret, &isPartial)) {
+		return;
+	}
+
 	if (ts_match_datetime(oo, ret, &isPartial)) {
+		return;
+	}
+
+	if (ts_match_daytime(oo, ret, &isPartial)) {
 		return;
 	}
 
@@ -1394,15 +1769,19 @@ void ts_value_zval(toml_stream* oo, zval* ret)
 
 HashTable*
 ts_parse_string(toml_stream* oo, zend_string *s) {
-	HashTable* ret;
+	HashTable* ret = NULL;
 
-	ts_init_ts(oo, s);
+	ts_parse_init(oo, s);
 	int id = ts_moveNext(oo);
 
 	while ( id != tom_EOS) {
+		printf("loop line,id,ix %d, %d, %d\n", oo->line, id, oo->index);
+
 		switch(id) {
+
 			case tom_Hash:
 				ts_comment(oo);
+				id = ts_moveNext(oo);
 				break;
 			case tom_Space:
 			case tom_NewLine:
@@ -1413,11 +1792,11 @@ ts_parse_string(toml_stream* oo, zend_string *s) {
             case tom_Apost1:
             case tom_Integer:
             	ts_key_value(oo);
-            	ts_finish_line(oo);
+            	id = ts_finish_line(oo);
             	break;
             case tom_LSquare:
             	ts_table_path(oo);
-            	ts_finish_line(oo);
+            	id = ts_finish_line(oo);
             	break;
             default:
             	ts_syntax_error(oo,"Expect <key> = | [<path>] | # comment");
@@ -1425,14 +1804,14 @@ ts_parse_string(toml_stream* oo, zend_string *s) {
 		}
 		if (oo->error) {
 			zend_string* msg = zend_string_copy(oo->errorMsg);
-			ts_destroy_ts(oo);
+			ts_parse_end(oo);
 			zend_throw_error_exception(zend_ce_error_exception, msg, 0,E_ERROR);
 			return ret;
 		}
 	}
 	ret = oo->root;
 	oo->root = NULL;
-	ts_destroy_ts(oo);
+	ts_parse_end(oo);
 	return ret;
 }
 
@@ -1442,9 +1821,9 @@ HashTable* toml_stream_parse(zend_string* str)
 	//ZVAL_COPY_VALUE(&ts->hold, str); // no inc ref counter
 
 	toml_stream oo;
-	ts_parse_string(&oo, str);
-
-	
+	ts_init_ts(&oo);
+	HashTable *result = ts_parse_string(&oo, str);
+	ts_destroy_ts(&oo);
 }
 
 

@@ -2,7 +2,16 @@
 
 $obj = new Ctoml();
 
-$data = ["101", "1000_001", "_01000_001", "01000_001_"];
+$data_path = dirname(__DIR__);
+
+$td = file_get_contents($data_path . "/tests/fruit.toml");
+
+$obj->parse($td);
+/*
+$val = $obj->matchBase("0xDEADBEEF");
+echo "Value = " . $val . " type = " . gettype($val) . PHP_EOL;
+
+$data = ["01000_001_", "1000_001", "101" ,"_01000_001", "099"];
 
 foreach( $data as $item) 
 {
@@ -14,6 +23,8 @@ foreach( $data as $item)
 		echo $ex->getMessage() . PHP_EOL;
 	}
 }
+
+
 
 
 $data = ["1.01", "-99_99.001", "-0.010_001", "+0.018", "120.", "-.88"];
@@ -80,3 +91,18 @@ foreach( $data as $item)
 		echo $ex->getMessage() . PHP_EOL;
 	}
 }
+$data = ["21:53:01", "06:30","23:59:58.919193", "01:01:60.0"];
+
+foreach( $data as $item) 
+{
+	try {
+		$val = $obj->matchTime($item);
+		echo "Value = " . $val->format()
+			. " type = " . get_class($val) . PHP_EOL;
+	} 
+	catch (Exception $ex) {
+		echo $ex->getMessage() . PHP_EOL;
+	}
+}
+
+*/

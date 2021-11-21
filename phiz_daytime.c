@@ -42,6 +42,8 @@ ZEND_FUNCTION(daytime_split)
 	zval*   hours;
 	zval*   mins;
 	zval*   secs;
+	int h24, m60;
+	double s60;
 
 	ZEND_PARSE_PARAMETERS_START(4, 4)
 	Z_PARAM_DOUBLE(value)
@@ -49,13 +51,12 @@ ZEND_FUNCTION(daytime_split)
 	Z_PARAM_ZVAL(mins)
 	Z_PARAM_ZVAL(secs)
 	ZEND_PARSE_PARAMETERS_END();
-	int h24, m60;
-	double s60;
 
 	daytime_split(value, &h24, &m60, &s60);
-	ZVAL_LONG(hours, h24);
-	ZVAL_LONG(mins, m60);
-	ZVAL_DOUBLE(secs, s60);
+
+	ZVAL_LONG(Z_REFVAL_P(hours), h24);
+	ZVAL_LONG(Z_REFVAL_P(mins), m60);
+	ZVAL_DOUBLE(Z_REFVAL_P(secs), s60);
 
 }
 
@@ -65,7 +66,6 @@ ZEND_FUNCTION(daytime_set)
 	long mins;
 	double secs;
 	double ret;
-	
 
 	ZEND_PARSE_PARAMETERS_START(3, 3)
 		Z_PARAM_LONG(hours)
@@ -78,6 +78,8 @@ ZEND_FUNCTION(daytime_set)
 	if (error) {
 		zend_throw_exception(phiz_ce_RuntimeException,error,1);
 	}
+
+	ZVAL_DOUBLE(return_value, ret);
 }
 
 ZEND_FUNCTION(daytime_str) {
@@ -148,13 +150,15 @@ PHP_METHOD(DayTime, split)
 	Z_PARAM_ZVAL(mins)
 	Z_PARAM_ZVAL(secs)
 	ZEND_PARSE_PARAMETERS_END();
+
 	int h24, m60;
 	double s60;
 	pz_daytime pz = Z_PHIZ_DAYTIME_P(object);
 	daytime_split(pz->daytime.tval, &h24, &m60, &s60);
-	ZVAL_LONG(hours, h24);
-	ZVAL_LONG(mins, m60);
-	ZVAL_DOUBLE(secs, s60);
+
+	ZVAL_LONG(Z_REFVAL_P(hours), h24);
+	ZVAL_LONG(Z_REFVAL_P(mins), m60);
+	ZVAL_DOUBLE(Z_REFVAL_P(secs), s60);
 }
 
 PHP_METHOD(DayTime, format)

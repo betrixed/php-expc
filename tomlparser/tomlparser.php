@@ -238,9 +238,6 @@ class TomlParser
                 $this->isSingle = false;
                 $this->index += strlen($capture[1]);
             } else {
-                if ($id > 0) {
-                    throw new Exception('Bad capture array');
-                }
                 $this->index += $nextCt;
                 $this->isSingle = false;
                 if ($nextCt === 1) {

@@ -7,7 +7,7 @@
  * @author michael
  */
 
-class DayTime
+class Time24
 {
     //put your code here
     public float $val = 0.0;
@@ -61,7 +61,7 @@ class DayTime
 }
 
 
-function daytime_format(float $val, int $flags = 0) : string 
+function time24_format(float $val, int $flags = 0) : string 
 {
         $h24 = 0;
         $min = 0;
@@ -88,7 +88,7 @@ function daytime_format(float $val, int $flags = 0) : string
         }
 }
 
-function daytime_str(string $t24) : float {
+function time24_str(string $t24) : float {
         $i = stripos($t24,":");
         if ($i === 2) {
             $hours = intval(substr($t24,0,2));
@@ -107,7 +107,7 @@ function daytime_str(string $t24) : float {
         return daytime_set($hours,$mins,$secs);
 }
 
-function daytime_set(int $hours, int $mins, float $seconds) : float {
+function time24_set(int $hours, int $mins, float $seconds) : float {
         if ($hours < 0 || $mins < 0 || $seconds < 0) {
             throw new Exception("DayTime rejects negative values");
         }
@@ -117,7 +117,7 @@ function daytime_set(int $hours, int $mins, float $seconds) : float {
         return ($h24 * 60.0 * 60.0 + $m60 * 60.0 + $s60) / (24.0*60*60.0);
 }
 
-function daytime_split(float $val, int &$h24, int &$min, float &$sec) {
+function time24_split(float $val, int &$h24, int &$min, float &$sec) {
     $frs = $val * 24.0 * 60.0 * 60.0;
     $h24 = floor($frs / (60.0 * 60.0));
     $min =  floor($frs / 60.0) - $h24 * 60;

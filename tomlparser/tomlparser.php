@@ -1,6 +1,6 @@
 <?php
 
-require __DIR__ . "/DayTime.php";
+require __DIR__ . "/Time24.php";
 /** test the concepts, with php 8.0+ , especially the regular expressions implementation */
 class TomlParser
 {
@@ -894,7 +894,7 @@ class TomlParser
         if ($ct > 0) {
             $capture = $match[1];
              if (strlen($s) === strlen($capture)) {
-                $mixed =  new DayTime($capture);
+                $mixed =  new Time24($capture);
                 return self::MATCH;
             }
             return self::PARTIAL;

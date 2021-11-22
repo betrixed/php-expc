@@ -51,16 +51,73 @@ class MapOutput
 
 }
 
-$p = new TomlParser();
-$output = new MapOutput();
-foreach ([
-'fruit.toml',
- 'example.toml',
- 'hard_example.toml',
- 'hard_example_unicode.toml']
-as $name) {
-    $data = file_get_contents(__DIR__ . "/" . $name);
-
-    $r = $p->parse($data);
-    $output->aout($r);
+function tree_count(array $data) : int 
+{
+    $ct = count($data);
+    foreach($data as $item) 
+    {
+        if (is_array($item)) 
+        {
+            $ct += tree_count($item);
+        }       
+    }
+    return $ct;
 }
+
+
+$p = new TomlParser();
+
+    foreach ([
+    'fruit.toml',
+     'example.toml',
+     'hard_example.toml',
+     'hard_example_unicode.toml']
+    as $name) {
+        $data = file_get_contents( dirname(__DIR__) . "/tests/" . $name);
+        try {
+            $r = $p->parse($data);
+            echo "Total keys = " . tree_count($r) . PHP_EOL;
+        } catch (Exception $ex) {
+            echo $ex->getMessage() . PHP_EOL;
+        }
+    }
+
+
+$store = [];
+foreach ([
+    'fruit.toml',
+     'example.toml',
+     'hard_example.toml',
+     'hard_example_unicode.toml']
+    as $ix => $name) {
+    $store[] = file_get_contents( dirname(__DIR__) . "/tests/" . $name);
+}
+
+
+$start = microtime(true);
+for($i = 0; $i < 100; $i++) {
+    foreach($store as $data) {
+        $r = $p->parse($data);
+    }
+}
+$end = microtime(true);
+
+$totaltime = $end - $start;
+
+echo 'Intepret ' . $totaltime . PHP_EOL;
+
+
+$p = new Ctoml();
+$start = microtime(true);
+for($i = 0; $i < 100; $i++) {
+    foreach($store as $data) {
+        $r = $p->parse($data);
+    }
+}
+$end = microtime(true);
+
+$etime = $end - $start;
+
+echo 'C-Extension ' . $etime  . PHP_EOL;;
+
+echo 'Interpreter Slower ' . ($totaltime - $etime) / $etime . PHP_EOL;

@@ -4,9 +4,25 @@ $obj = new Ctoml();
 
 $data_path = dirname(__DIR__);
 
-$td = file_get_contents($data_path . "/tests/fruit.toml");
+$parseFiles = [
+	'fruit.toml', 
+	'example.toml', 
+	'hard_example.toml', 
+	'hard_example_unicode.toml'
+];
 
-$obj->parse($td);
+
+foreach($parseFiles as $name) {
+	$td = file_get_contents($data_path . "/tests/" . $name);
+	try {
+		$data = $obj->parse($td);
+		echo "Root keys = " . count($data) . PHP_EOL;
+	}
+	catch(Exception $e){
+		echo "Caught error: " . $e->getMessage() 
+		. PHP_EOL . "File " . $name . PHP_EOL;
+	}
+}
 /*
 $val = $obj->matchBase("0xDEADBEEF");
 echo "Value = " . $val . " type = " . gettype($val) . PHP_EOL;
@@ -104,5 +120,5 @@ foreach( $data as $item)
 		echo $ex->getMessage() . PHP_EOL;
 	}
 }
-
 */
+

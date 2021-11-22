@@ -71,7 +71,9 @@ bool ts_match_daytime(toml_stream* oo, zval* ret, bool* partial);
 bool ts_match_base(toml_stream* oo, zval* ret, bool* partial);
 
 void ts_parse_init(toml_stream* oo, zend_string* s);
+HashTable* ts_parse_loop(toml_stream* oo);
 void ts_parse_end(toml_stream* oo);
+
 
 void ts_assign_value(toml_stream* oo, zend_string* val);
 void ts_init_ts(toml_stream* oo);
@@ -85,6 +87,6 @@ void ts_clear_error(toml_stream* oo);
 void ts_set_path(toml_stream* oo, zend_string* p);
 void ts_set_partkey(toml_stream* oo, zend_string* p);
 
-HashTable* ts_parse_string(toml_stream* oo, zend_string *s);
+
 
 #endif

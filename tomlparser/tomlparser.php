@@ -726,13 +726,17 @@ class TomlParser
 
                         $path_ref[$part_key] = [];
                         $path_ref = &$path_ref[$part_key];
-                        $tag = new TomPartTag();
 
-                        $tag->aot = $isAOT;
-                        $tag->implicit = true;
-                        $tag->n = 0;
-                        $tag->base = &$path_ref;
 
+                        $tag = $this->table_parts[$path] ?? null;
+                        if ($tag===null) {
+                            $tag = new TomPartTag();
+
+                            $tag->aot = $isAOT;
+                            $tag->implicit = true;
+                            $tag->n = 0;
+                            $tag->base = &$path_ref;
+                        }
                         $this->table_parts[$path] = $tag;
                     }
 
@@ -746,8 +750,7 @@ class TomlParser
         }
         if (!$hitNew) {
             // check last object && last parts value
-            $tag = $this->table_parts[$path];
-
+            
             if ($tag->aot) {
                 $path_ref = &$tag->newRef();
             } else {
@@ -759,7 +762,7 @@ class TomlParser
                 }
             }
         } else {
-            $tag = $this->table_parts[$path];
+
             if ($tag->aot) {
                 $path_ref = &$tag->newRef();
             }

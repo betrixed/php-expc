@@ -148,7 +148,7 @@ void ts_key_value(toml_stream* oo);
 void  ts_set_errorMsg(toml_stream* oo, zend_string* msg);
 
 void ts_syntax_error(toml_stream* oo, const char* msg) {
-	printf("Syntax error: %s\n", msg);
+	//printf("Syntax error: %s\n", msg);
 	ts_set_errorMsg(oo, strpprintf(0,"TOML syntax: %s", msg));
 }
 
@@ -274,7 +274,7 @@ int ts_str_captures(toml_stream* oo, zend_string* expr, zend_string* alt)
 	
 	pcre_cache_entry* entry = pcre_get_compiled_regex_cache(expr);
 	if (!entry) {
-		printf("Error expr %s\n", ZSTR_VAL(expr));
+		//printf("Error expr %s\n", ZSTR_VAL(expr));
 
 		return 0;
 	}
@@ -360,8 +360,9 @@ void ts_doneToken(toml_stream* oo)
 		oo->index++;
 		return;
 	}
-	if (!oo->is_single) {
+	if ((!oo->is_single) && oo->value) {
 		oo->index += ZSTR_LEN(oo->value);
+		ts_assign_value(oo,NULL);
 	}
 	else {
 		oo->index += 1;
@@ -475,7 +476,10 @@ void ts_set_errorMsg(toml_stream* oo, zend_string* src) {
 	if (oo->errorMsg != NULL) {
 		zend_string_release(oo->errorMsg);
 	}
-	oo->errorMsg = src;
+	zend_string* msg = strpprintf(0, "Line %d : %s", oo->line+1, ZSTR_VAL(src));
+
+	oo->errorMsg = msg;
+	zend_string_release(src);
 }
 
 void ts_value_error(toml_stream* oo, char* msg, zend_string* src) {
@@ -822,7 +826,7 @@ ts_list(toml_stream* oo) {
 
 	while(inloop) {
 		id = ts_peekToken(oo);
-		//printf("List loop %d\n", id);
+		
 		switch(id) {
 			case tom_Space:
 				ts_moveExpr(oo, tom_Space);
@@ -851,22 +855,35 @@ ts_list(toml_stream* oo) {
 	}
 	while (id != tom_RSquare) {
 		if (id == tom_LSquare) {
+			
 			// array type is array
 			ts_doneToken(oo);
-
+			
 			if (zend_array_count(ret)==0) {
 				value_type = IS_ARRAY;
 			}
-			else {
+			else if (value_type != IS_ARRAY) {
 				ts_array_type_error(oo,value_type,IS_ARRAY);
 				break;
 			}
+
 			HashTable* inner = ts_list(oo);
+
+			if (oo->error) {
+				if (inner) {
+					printf("Error release\n");
+					zend_hash_release(inner);
+					return ret;
+				}
+			}
 			ZVAL_ARR(&element, inner);
+
 			//Z_TRY_ADDREF(element);
 			zend_hash_next_index_insert(ret, &element);
+			
 		}
 		else {
+			ZVAL_NULL(&element);
 			ts_value_zval(oo, &element);
 			int ztype = Z_TYPE(element);
 			
@@ -878,7 +895,7 @@ ts_list(toml_stream* oo) {
 				break;
 			}
 			//Z_TRY_ADDREF(element);
-			//printf("Element type is %d at %d\n", ztype, oo->index);
+
 			zend_hash_next_index_insert(ret, &element);
 		}
 
@@ -890,7 +907,6 @@ ts_list(toml_stream* oo) {
 		comma = 0;
 		while(inloop) {
 			id = ts_peekToken(oo);
-			//printf("Peek %d\n", id);
 			switch(id) {
 				case tom_Space:
 					ts_moveExpr(oo,tom_Space);
@@ -904,10 +920,10 @@ ts_list(toml_stream* oo) {
 					break;
 				case tom_Comma:
 					if (comma) {
+
 						ts_syntax_error(oo,"No value between commas");
 						return ret;
 					}
-					//printf("Comma\n");
 					comma = true;
 					ts_doneToken(oo);
 					break;
@@ -958,8 +974,6 @@ void ts_key_value(toml_stream* oo) {
 	HashTable       *oldTable;
 
 	ts_key_name(oo, &key);
-	
-	//printf("Key = %s\n", ZSTR_VAL(key));
 
 	if (zend_hash_exists(oo->table, key)) {
 		ts_set_errorMsg(oo, strpprintf(0,"Duplicate key %s", ZSTR_VAL(key)));
@@ -1035,10 +1049,23 @@ HashTable* toml_make_regx_table()
 	add_index_str(&tmp, tom_No_0Digit, wrap_expr_str(cNo_0Digit));
 	return re;
 }
-
+void ts_init_token(toml_stream* oo)
+{
+	oo->start = 0;
+	oo->end = 0;
+	oo->id = 0;
+	oo->is_single = 0;
+	oo->code = 0;
+	oo->tokenLine = 0;
+	oo->line = 0;
+	oo->index = 0;
+	oo->lineBegin = 0;
+	oo->flagLF = 0;
+}
 void ts_parse_init(toml_stream* oo, zend_string* s) 
 {
-	//printf("parse_init\n");
+	ts_init_token(oo);
+
 	if (s) {
 		oo->hold = zend_string_copy(s);
 		oo->sptr = ZSTR_VAL(s);
@@ -1059,13 +1086,8 @@ void ts_parse_init(toml_stream* oo, zend_string* s)
 	oo->table_parts = zend_new_array(4); 
 	oo->table = oo->root;
 	oo->expSet = toml_key_exp;
-	oo->lineBegin = 0;
-	oo->flagLF = 0;
-	oo->tokenLine = 0;
 	oo->path = NULL;
 	oo->partkey = NULL;
-
-	//printf("parse_init_end\n");
 }
 
 void ts_set_path(toml_stream* oo, zend_string* p) {
@@ -1083,11 +1105,29 @@ void ts_set_partkey(toml_stream* oo, zend_string* p)
 	oo->partkey = p;
 }
 
+int
+tag_part_apply_delete(zval *del)
+{
+	tom_part_tag* ptag = (tom_part_tag*)Z_PTR_P(del);
+	efree(ptag);
+
+	return ZEND_HASH_APPLY_REMOVE;
+}
+
 void ts_parse_end(toml_stream* oo) 
 {
-	//printf("parse_end\n");
+	if (oo->error) {
+		if (oo->errorMsg) {
+			ts_handle_error(oo);
+			zend_string_release(oo->errorMsg);
+		}
+		oo->errorMsg = NULL;
+		oo->error = 0;
+	}
+
 	if (oo->hold) {
 		zend_string_release(oo->hold);
+		oo->hold = NULL;
 	}
 	if (oo->value) {
 		//printf("Str ref count %d\n", oo->value->gc.refcount);
@@ -1104,38 +1144,26 @@ void ts_parse_end(toml_stream* oo)
 		oo->root = NULL;
 	}
 
-	if (oo->error) {
-		if (oo->errorMsg) {
-			zend_string_release(oo->errorMsg);
-		}
-		oo->errorMsg = NULL;
-		oo->error = 0;
-	}
+
 	if (oo->table_parts) {
+		zend_hash_apply(oo->table_parts, tag_part_apply_delete);
 		zend_hash_release(oo->table_parts);
+		oo->table_parts = NULL;
 	}
 	ts_set_path(oo,NULL);
 	ts_set_partkey(oo,NULL);
 }
 
+
 void ts_init_ts(toml_stream* oo) {
 	ZVAL_NULL(&oo->subpats);
 
-	oo->start = 0;
-	oo->end = 0;
-	// force a valid (empty) zend_string
+
+	ts_init_token(oo);
+
 	oo->value = NULL;
-	oo->id = 0;
-	oo->is_single = 0;
-	oo->code = 0;
 	oo->error = 0;
 	oo->errorMsg = NULL;
-	oo->index = 0;
-	oo->lineBegin = 0;
-	oo->flagLF = 0;
-	
-	oo->tokenLine = 0;
-
 	oo->hold = NULL;
 	oo->sptr = NULL;
 	oo->slen = 0;
@@ -1154,6 +1182,7 @@ void ts_init_ts(toml_stream* oo) {
 
 void ts_destroy_ts(toml_stream* oo)
 {
+	ts_parse_end(oo);
 	zend_string** map = oo->zs_map;
 	if (map != NULL) {
 		for(int i = 0; i <= tom_Bad; i++) {
@@ -1165,7 +1194,7 @@ void ts_destroy_ts(toml_stream* oo)
 		efree(map);
 		oo->zs_map = NULL;
 	}
-	ts_parse_end(oo);
+	
 }
 
 int ts_finish_line(toml_stream* oo)
@@ -1203,7 +1232,6 @@ tom_part_tag* new_tag_part(HashTable *leaf, bool isAOT) {
 /* retrieve current last array of table of arrays */
 HashTable* tag_part_endRef(tom_part_tag* ptag)
 {
-	printf("Last array part %lx\n", ptag->last);
 	return ptag->last;
 }
 
@@ -1217,14 +1245,13 @@ HashTable* tag_part_newRef(tom_part_tag* ptag)
 	zend_hash_next_index_insert(ptag->base, &nt);
 	ptag->last = result;
 	ptag->n++;
-	printf("New array part %lx\n", result);
 	return result;
 }
 
 void ts_table_path(toml_stream* oo)
 {
 	HashTable* path_ref = oo->root;
-	printf("path_ref %lx %d\n",path_ref, path_ref->gc.refcount);
+	
 	ts_set_path(oo,NULL);
 	ts_set_partkey(oo,NULL);
 
@@ -1243,7 +1270,6 @@ void ts_table_path(toml_stream* oo)
 	id = ts_moveNext(oo);
 	
 	while(inloop) {
-		printf("TablePath id = %d\n", id);
 		switch(id) {
 			case tom_Hash:
 				ts_syntax_error(oo, "Unexpected '#' in path");
@@ -1284,7 +1310,6 @@ void ts_table_path(toml_stream* oo)
 				}
 				id = ts_moveNext(oo);
 				isAOT = true;
-				printf("AOT found id = %d\n", id);
 				break;
 			case tom_Dot:
 				if (dotCount > 0) {
@@ -1301,7 +1326,7 @@ void ts_table_path(toml_stream* oo)
 				ts_key_name(oo, &part_key);
 				ts_set_partkey(oo, part_key); 
 
-				zend_string* path = add_path_part(oo->path, part_key);
+				path = add_path_part(oo->path, part_key);
 				ts_set_path(oo,path);
 
 
@@ -1309,10 +1334,10 @@ void ts_table_path(toml_stream* oo)
 					ts_syntax_error(oo,"Expected a '.' after path part");
 					return;
 				}
-				printf("Full path = %s\n", ZSTR_VAL(path));
+
 				dotCount = 0;
 				parts_ct += 1;
-				printf("Array part here %lx\n", path_ref);
+
 
 				zval* part = zend_hash_find(path_ref, part_key);
 				if (part) {
@@ -1332,7 +1357,7 @@ void ts_table_path(toml_stream* oo)
 						return;
 					}
 					ptag = (tom_part_tag*) Z_PTR_P(pentry);
-					printf("ptag %lx ct: %d, ref: %lx\n", ptag, ptag->n, ptag->base);
+					
 					if (ptag->aot) {
 						aotLength++;
 						if (!ptag->implicit) {
@@ -1349,30 +1374,40 @@ void ts_table_path(toml_stream* oo)
 					HashTable* leaf = zend_new_array(4);
 					zval  temp;
 					ZVAL_ARR(&temp, leaf);
+
 					zend_hash_str_add(path_ref, ZSTR_VAL(part_key), ZSTR_LEN(part_key), &temp );
 					path_ref = leaf;
-					ptag = new_tag_part(leaf, isAOT);
-					//zend_string* key = zend_string_copy(path);
-					zval   myp;
-					ZVAL_PTR(&myp, ptag);
-					void* ptr = zend_hash_str_add(oo->table_parts, 
-						ZSTR_VAL(path), ZSTR_LEN(path),
-						&myp);
 
+					zval* pentry = zend_hash_find(oo->table_parts, path);
+					if (!pentry) {
+						ptag = new_tag_part(leaf, isAOT);
+					//zend_string* key = zend_string_copy(path);
+						zval   myp;
+						ZVAL_PTR(&myp, ptag);
+						void* ptr = zend_hash_str_add(oo->table_parts, 
+							ZSTR_VAL(path), ZSTR_LEN(path), &myp);
+
+					}
+					else {
+						ptag = (tom_part_tag*) Z_PTR_P(pentry);
+					}
 				}
 				id = ts_moveNext(oo);
 				break;
 		} // switch
 	} // loop
-	if (part_key = NULL)
-	{	
-		ts_set_partkey(oo,NULL);
-	}
-	if (ZSTR_LEN(path)==0) {
+
+	// done with part_Key
+	ts_set_partkey(oo,NULL);
+	part_key = NULL;
+
+	if (!path) {
 		ts_syntax_error(oo, "Table path cannot be empty");
 		return;
 	}
-	if (hitNew) {
+	
+
+	if (!hitNew) {
 		if (ptag->aot) {
 			path_ref = tag_part_newRef(ptag);
 		}
@@ -1395,6 +1430,7 @@ void ts_table_path(toml_stream* oo)
 				ptag->implicit = false;
 		}
 	}
+
 	ts_set_path(oo,NULL);
 	oo->table = path_ref;
 }
@@ -1404,6 +1440,7 @@ void ts_handle_error(toml_stream* oo)
 	if (!oo->error) {
 		return;
 	}
+
 	zend_throw_exception(zend_ce_error_exception, ZSTR_VAL(oo->errorMsg), 0);
 }
 
@@ -1439,7 +1476,7 @@ bool ts_match_integer(toml_stream* oo, zval* ret, bool* partial)
 bool ts_match_base(toml_stream* oo, zval* ret, bool* partial) 
 {
 	//printf("match_integer value ref = %d\n", oo->value->gc);
-	printf("Base match %s\n", ZSTR_VAL(oo->value));
+	//printf("Base match %s\n", ZSTR_VAL(oo->value));
 	if (ts_expr_captures(oo, tom_BaseInt, oo->value)) {
 		
 		zval* find = zend_hash_index_find(Z_ARR(oo->subpats),1);
@@ -1454,7 +1491,7 @@ bool ts_match_base(toml_stream* oo, zval* ret, bool* partial)
 			}
 			char* pbase = ZSTR_VAL(istr);
 			int base = 0;
-			printf("Base %s\n", pbase);
+
 			switch(*(pbase+1)) {
 				case 'b': 
 					base = 2;
@@ -1505,7 +1542,6 @@ bool ts_match_floatdot(toml_stream* oo, zval* ret, bool* partial)
 			}
 			char* endptr;
 			double d = strtod(ZSTR_VAL(fstr),&endptr);
-			printf("Float match %lg\n", d);
 			zend_string_release(fstr);
 			ZVAL_DOUBLE(ret, d);
 			return true;
@@ -1554,7 +1590,6 @@ bool ts_match_nan(toml_stream* oo, zval* ret, bool* partial)
 		if (ZSTR_LEN(oo->value) == ZSTR_LEN(match)) {
 			char* endptr;
 			double d = strtod(ZSTR_VAL(match),&endptr);
-			printf("Float match %lg\n", d);
 			ZVAL_DOUBLE(ret, d);
 			return true;
 		}
@@ -1570,7 +1605,7 @@ bool ts_match_bool(toml_stream* oo, zval* ret, bool* partial)
 	if (ts_expr_captures(oo, tom_Bool, oo->value)) {
 		zval* find = zend_hash_index_find(Z_ARR(oo->subpats),1);
 		zend_string* match = Z_STR_P(find);
-		zend_string* fstr;
+
 		if (ZSTR_LEN(oo->value) == ZSTR_LEN(match)) {
 			if (strcmp(ZSTR_VAL(oo->value),"true")==0) {
 				ZVAL_TRUE(ret);
@@ -1613,7 +1648,7 @@ bool ts_match_datetime(toml_stream* oo, zval* ret, bool* partial)
 	if (ts_expr_captures(oo, tom_DateTime, oo->value)) {
 		zval* find = zend_hash_index_find(Z_ARR(oo->subpats),1);
 		zend_string* match = Z_STR_P(find);
-		zend_string* fstr;
+
 		if (ZSTR_LEN(oo->value) == ZSTR_LEN(match)) {
 			static zend_string* dtname = NULL;
 			if (dtname == NULL) {
@@ -1622,14 +1657,16 @@ bool ts_match_datetime(toml_stream* oo, zval* ret, bool* partial)
 			zend_class_entry *dtentry = zend_lookup_class(dtname);
 			
 			zval zvalobj;
+			ZVAL_NULL(&zvalobj);
 			object_init_ex(&zvalobj, dtentry);
 			zend_object* obj = Z_OBJ(zvalobj);
 
 
 			ZVAL_COPY_VALUE(ret, &zvalobj);
 			zend_function *ctor = Z_OBJ_HT(zvalobj)->get_constructor(obj);
-
-			int result = call_function_by_ptr(ctor, obj, &zvalobj, 1, find);
+			zval zresult;
+			ZVAL_NULL(&zresult);
+			int result = call_function_by_ptr(ctor, obj, &zresult, 1, find);
 			//printf("call result = %d %d\n", result, Z_TYPE_P(ret));
 			return true;
 		}
@@ -1646,7 +1683,7 @@ bool ts_match_daytime(toml_stream* oo, zval* ret, bool* partial)
 	if (ts_expr_captures(oo, tom_DayTime, oo->value)) {
 		zval* find = zend_hash_index_find(Z_ARR(oo->subpats),1);
 		zend_string* match = Z_STR_P(find);
-		zend_string* fstr;
+
 		if (ZSTR_LEN(oo->value) == ZSTR_LEN(match)) {
 			
 			static zend_string* dtname = NULL;
@@ -1702,7 +1739,6 @@ void ts_value_zval(toml_stream* oo, zval* ret)
 	}
 	if (str) {
 		ZVAL_STR(ret, str);
-		printf("Done quote %s\n", ZSTR_VAL(str));
 		return;
 	}
 
@@ -1768,15 +1804,12 @@ void ts_value_zval(toml_stream* oo, zval* ret)
 }
 
 HashTable*
-ts_parse_string(toml_stream* oo, zend_string *s) {
+ts_parse_loop(toml_stream* oo) {
 	HashTable* ret = NULL;
 
-	ts_parse_init(oo, s);
 	int id = ts_moveNext(oo);
 
 	while ( id != tom_EOS) {
-		printf("loop line,id,ix %d, %d, %d\n", oo->line, id, oo->index);
-
 		switch(id) {
 
 			case tom_Hash:
@@ -1803,15 +1836,12 @@ ts_parse_string(toml_stream* oo, zend_string *s) {
             	break;
 		}
 		if (oo->error) {
-			zend_string* msg = zend_string_copy(oo->errorMsg);
-			ts_parse_end(oo);
-			zend_throw_error_exception(zend_ce_error_exception, msg, 0,E_ERROR);
-			return ret;
+			break;
 		}
 	}
 	ret = oo->root;
 	oo->root = NULL;
-	ts_parse_end(oo);
+	//ts_parse_end(oo);
 	return ret;
 }
 
@@ -1822,7 +1852,8 @@ HashTable* toml_stream_parse(zend_string* str)
 
 	toml_stream oo;
 	ts_init_ts(&oo);
-	HashTable *result = ts_parse_string(&oo, str);
+	ts_parse_init(&oo, str);
+	HashTable *result = ts_parse_loop(&oo);
 	ts_destroy_ts(&oo);
 }
 

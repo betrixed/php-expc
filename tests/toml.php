@@ -11,18 +11,27 @@ $parseFiles = [
 	'hard_example_unicode.toml'
 ];
 
-
+function tree_count(array $data) : int {
+	$ct = count($data);
+	foreach($data as $item) {
+		if (is_array($item)) {
+			$ct += tree_count($item);
+		}
+	}
+	return $ct;
+}
 foreach($parseFiles as $name) {
 	$td = file_get_contents($data_path . "/tests/" . $name);
 	try {
 		$data = $obj->parse($td);
-		echo "Root keys = " . count($data) . PHP_EOL;
+		echo "Total keys = " . tree_count($data) . PHP_EOL;
 	}
 	catch(Exception $e){
 		echo "Caught error: " . $e->getMessage() 
 		. PHP_EOL . "File " . $name . PHP_EOL;
 	}
 }
+
 /*
 $val = $obj->matchBase("0xDEADBEEF");
 echo "Value = " . $val . " type = " . gettype($val) . PHP_EOL;

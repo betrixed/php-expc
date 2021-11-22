@@ -302,7 +302,7 @@ ZEND_FUNCTION(route_extract_params)
 	add_next_index_str(return_value, route_str.s);
 
 
-		(&tmp, matches);
+	ZVAL_ARR(&tmp, matches);
 	add_next_index_zval(return_value, &tmp);
 	//Z_ADDREF_P(return_value);
 	//zval_ptr_dtor(&tmp);

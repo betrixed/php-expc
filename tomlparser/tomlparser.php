@@ -42,6 +42,7 @@ class TomlParser
     const tom_Nan = 34;
     const tom_AnyChar = 35;
 
+    const NOTRY = 0;
     const PARTIAL = 1;
     const MATCH = 2;
     const FAIL = 4;
@@ -886,7 +887,7 @@ class TomlParser
         return self::FAIL;
     }
     
-     function matchTime(string $s, &$mixed) : int 
+    function matchTime(string $s, &$mixed) : int 
     {
         $expr = $this->map[self::tom_Time];
         $match = null;
@@ -894,7 +895,7 @@ class TomlParser
         if ($ct > 0) {
             $capture = $match[1];
              if (strlen($s) === strlen($capture)) {
-                $mixed =  new Time24($capture);
+                $mixed =  new DayTime($capture);
                 return self::MATCH;
             }
             return self::PARTIAL;
@@ -918,8 +919,12 @@ class TomlParser
         return self::FAIL;
     }
     
+    /**
+     * 
+     */
     function value()
     {
+        // first two characters should 
         $id = $this->id;
         if ($id === self::tom_Apost1) {
             if ($this->moveExpr(self::tom_Apost3)) {
@@ -939,6 +944,7 @@ class TomlParser
             return $value;
         }
         $notfull = false;
+        $match = self::NOTRY;
         if (!$this->moveExpr(self::tom_AnyValue)) {
             $this->syntaxError("No value after = ");
         } else {
@@ -957,10 +963,30 @@ class TomlParser
                     else {
                         throw new Exception("Invalid base number $value");
                     }
+                    break;
+                case 'tr':
+                case 'fa':
+                    $match = $this->matchBool($value,$result);
+                    if ($match === self::MATCH) {
+                        return $result;
+                    }
+                    break;
+                case '-i':
+                case '+i':
+                case '-n':
+                case '+n':
+                case 'na':
+                case 'in':
+                    $match = $this->matchNan($value,$result);
+                    if ($match === self::MATCH) {
+                        return $result;
+                    }
                 default:
                     break;
             }
-
+            if (!$notfull) {
+                $notfull = ($match===self::PARTIAL);
+            }
             
             $match = $this->matchInt($value,$result);
             if ($match === self::MATCH) {
@@ -985,23 +1011,7 @@ class TomlParser
             else if (!$notfull) {
                 $notfull = ($match===self::PARTIAL);
             }
-            
-            $match = $this->matchBool($value,$result);
-            if ($match === self::MATCH) {
-                return $result;
-            }
-            else if (!$notfull) {
-                $notfull = ($match===self::PARTIAL);
-            }
-            
-            $match = $this->matchNan($value,$result);
-            if ($match === self::MATCH) {
-                return $result;
-            }
-            else if (!$notfull) {
-                $notfull = ($match===self::PARTIAL);
-            }
-            
+
             $match = $this->matchDateTime($value, $result);
             if ($match === self::MATCH) {
                 return $result;
@@ -1009,6 +1019,7 @@ class TomlParser
             else if (!$notfull) {
                 $notfull = ($match===self::PARTIAL);
             }
+            
             $match = $this->matchTime($value, $result);
             if ($match === self::MATCH) {
                 return $result;

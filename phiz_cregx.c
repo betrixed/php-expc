@@ -15,8 +15,6 @@
 #include "Zend/zend_interfaces.h"
 #include "Zend/zend_smart_str.h"
 
-#include "src/tom_p.h"
-#include "src/daytime.h"
 
 
 // ** how otherwise can the refcount be tweaked?

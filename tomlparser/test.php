@@ -64,6 +64,7 @@ function tree_count(array $data) : int
     return $ct;
 }
 
+$testsdir = "/home/michael/dev/php_toml/tests/";
 
 $p = new TomlParser();
 
@@ -73,7 +74,7 @@ $p = new TomlParser();
      'hard_example.toml',
      'hard_example_unicode.toml']
     as $name) {
-        $data = file_get_contents( dirname(__DIR__) . "/tests/" . $name);
+        $data = file_get_contents( $testsdir . $name);
         try {
             $r = $p->parse($data);
             echo "Total keys = " . tree_count($r) . PHP_EOL;
@@ -90,12 +91,13 @@ foreach ([
      'hard_example.toml',
      'hard_example_unicode.toml']
     as $ix => $name) {
-    $store[] = file_get_contents( dirname(__DIR__) . "/tests/" . $name);
+    $store[] = file_get_contents( $testsdir . $name);
 }
 
+$iterate = 50;
 
 $start = microtime(true);
-for($i = 0; $i < 100; $i++) {
+for($i = 0; $i < $iterate; $i++) {
     foreach($store as $data) {
         $r = $p->parse($data);
     }
@@ -103,21 +105,25 @@ for($i = 0; $i < 100; $i++) {
 $end = microtime(true);
 
 $totaltime = $end - $start;
-
+$avg = number_format(($totaltime * 1000) / $iterate,3);
 echo 'Intepret ' . $totaltime . PHP_EOL;
+echo "$avg ms" . PHP_EOL;
 
 
-$p = new Ctoml();
+$p = new TomlReader();
 $start = microtime(true);
-for($i = 0; $i < 100; $i++) {
+for($i = 0; $i < $iterate; $i++) {
     foreach($store as $data) {
-        $r = $p->parse($data);
+        $r = $p->read($data);
     }
 }
 $end = microtime(true);
 
 $etime = $end - $start;
 
+$avg = number_format(($etime * 1000) / $iterate,3);
+
 echo 'C-Extension ' . $etime  . PHP_EOL;;
+echo "$avg ms" . PHP_EOL;
 
 echo 'Interpreter Slower ' . ($totaltime - $etime) / $etime . PHP_EOL;

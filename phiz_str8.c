@@ -10,7 +10,19 @@
 #include "src/str8_obj.h"
 #include <zend_smart_str.h>
 
+
+
 #define phiz_ce_Aggregate     zend_ce_aggregate
+
+#ifndef ZVAL_OBJ_COPY
+#define ZVAL_OBJ_COPY(z, o) do {				\
+		zval *__z = (z);						\
+		zend_object *__o = (o);					\
+		GC_ADDREF(__o);							\
+		Z_OBJ_P(__z) = __o;						\
+		Z_TYPE_INFO_P(__z) = IS_OBJECT_EX;		\
+	} while (0)
+#endif
 
 typedef struct _phiz_str8_obj {
 	zval 		  target;

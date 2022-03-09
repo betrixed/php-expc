@@ -7,7 +7,7 @@ ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_str_camel, 0, 1, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, s, IS_STRING, 0)
-	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, seperate, IS_STRING, 0, "\"_\"")
+	ZEND_ARG_TYPE_INFO(0, seperate, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 
 #define arginfo_str_uncamel arginfo_str_camel

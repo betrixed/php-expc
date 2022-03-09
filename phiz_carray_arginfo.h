@@ -1,9 +1,13 @@
 /* This is a generated file, edit the .stub.php file instead.
  * Stub hash: 6b3fd28b8e06bb4e984a6a0893ecb4e4b2ce8a48 */
 
+#ifndef IS_MIXED
+#define IS_MIXED 0
+#endif
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Carray___construct, 0, 0, 1)
 	ZEND_ARG_TYPE_INFO(0, typeEnum, IS_LONG, 0)
-	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, size, IS_LONG, 0, "0")
+	ZEND_ARG_TYPE_INFO(0, size, IS_LONG, 0)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Carray_count, 0, 0, IS_LONG, 0)

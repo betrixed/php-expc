@@ -12,9 +12,9 @@
 #include <zend_smart_str.h>
 #include <ctype.h>
 
-#include "phiz_str8.h"
-#include "phiz_carray.h"
-#include "phiz_cregx.h"
+//#include "phiz_str8.h"
+//#include "phiz_carray.h"
+//#include "phiz_cregx.h"
 #include "src/ucode8.h"
 
 extern HashTable* toml_stream_parse(zend_string *src);
@@ -48,9 +48,9 @@ phiz_register_child_class(zend_class_entry ** ppce,
 PHP_MINIT_FUNCTION(phiz)
 {
 	//REGISTER_INI_ENTRIES();
-	PHP_MINIT(phiz_str8)(INIT_FUNC_ARGS_PASSTHRU);
-	PHP_MINIT(phiz_carray)(INIT_FUNC_ARGS_PASSTHRU);
-	PHP_MINIT(phiz_cregx)(INIT_FUNC_ARGS_PASSTHRU);
+	//PHP_MINIT(phiz_str8)(INIT_FUNC_ARGS_PASSTHRU);
+	//PHP_MINIT(phiz_carray)(INIT_FUNC_ARGS_PASSTHRU);
+	//PHP_MINIT(phiz_cregx)(INIT_FUNC_ARGS_PASSTHRU);
 	return SUCCESS;
 }
 /* }}} */
@@ -142,7 +142,7 @@ ZEND_FUNCTION(route_extract_params)
 	int  intermediate = 0,  matchCount = 0;		
 	int  cursor = 0, 		cursorVar = 0;
 	int  marker = 0,     	middle = 0;
-	bool invalid = false;
+	int  invalid = 0;
 	int  tmpCount = 0;
 	int  found = 0;
 
@@ -166,7 +166,7 @@ ZEND_FUNCTION(route_extract_params)
 				if (bracketCount == 0) {
 					marker = cursor+1;
 					middle = 0;
-					invalid = false;
+					invalid = 0;
 				}
 				bracketCount++;
 			}
@@ -183,7 +183,7 @@ ZEND_FUNCTION(route_extract_params)
 								break;
 							}
 							if ((cursorVar == 0) && !isalpha(xch)) {
-								invalid = true;
+								invalid = 1;
 								break;
 							}
 							if (isalnum(xch) || xch=='-' || xch=='_' || xch==':') 
@@ -195,7 +195,7 @@ ZEND_FUNCTION(route_extract_params)
 								}
 							}
 							else {
-								invalid = true;
+								invalid = 1;
 								break;
 							}
 						}

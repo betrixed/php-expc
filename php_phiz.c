@@ -17,8 +17,6 @@
 //#include "phiz_cregx.h"
 #include "src/ucode8.h"
 
-extern HashTable* toml_stream_parse(zend_string *src);
-
 ZEND_DECLARE_MODULE_GLOBALS(phiz)
 static PHP_GINIT_FUNCTION(phiz);
 static PHP_GSHUTDOWN_FUNCTION(phiz);
@@ -462,14 +460,4 @@ ZEND_FUNCTION(str_utf8c) {
 	}
 }
 
-ZEND_FUNCTION(toml_parse) {
-	zend_string* src = NULL;
 
-	ZEND_PARSE_PARAMETERS_START(1, 1)
-		Z_PARAM_STR(src)
-	ZEND_PARSE_PARAMETERS_END();
-
-	HashTable* ht = toml_stream_parse(src);
-
-    ZVAL_ARR(return_value, ht);
-}
